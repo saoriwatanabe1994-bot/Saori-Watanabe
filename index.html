@@ -1,18 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>受講受付</title>
+  <meta charset="UTF-8">
+  <title>受付</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
+  <p>受付中です…</p>
+
   <script>
-    const formUrl = new URLSearchParams(window.location.search).get("url");
-    if (formUrl) {
-      window.location.href = decodeURIComponent(formUrl);
-    } else {
-      document.body.innerText = "受付URLがありません";
+    async function main() {
+      await liff.init({ liffId: "2008911215-HK1dw62B" });
+
+      // URLパラメータ取得
+      const params = new URLSearchParams(window.location.search);
+      const member = params.get("member");
+
+      // GoogleフォームURL（entry番号はあなたのもの）
+      let formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/viewform";
+
+      if (member) {
+        formUrl += "?entry.71375240=" + encodeURIComponent(member);
+      }
+
+      window.location.href = formUrl;
     }
+
+    main();
   </script>
 </body>
 </html>

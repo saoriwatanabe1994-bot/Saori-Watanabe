@@ -3,22 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <title>受付</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
   <p>受付中です…</p>
 
   <script>
-    // URLパラメータ取得
-    const params = new URLSearchParams(window.location.search);
-    const member = params.get("member");
+    async function main() {
+      // 2008912129-TQRCpL9d
+      await liff.init({ liffId: "2008912129-TQRCpL9d" });
 
-    let formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/viewform";
+      // URLパラメータ取得
+      const params = new URLSearchParams(window.location.search);
+      const member = params.get("member");
 
-    if (member) {
-      formUrl += "?entry.71375240=" + encodeURIComponent(member);
+      let formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/viewform";
+
+      if (member) {
+        formUrl += "?entry.71375240=" + encodeURIComponent(member);
+      }
+
+      window.location.href = formUrl;
     }
 
-    window.location.href = formUrl;
+    main();
   </script>
 </body>
 </html>

@@ -6,12 +6,12 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body { font-family: sans-serif; padding: 10px; }
-    button {
-      font-size: 16px;
-      padding: 10px;
-      margin: 5px;
-      width: 45%;
-    }
+   button {
+  font-size: 20px;
+  padding: 18px;
+  margin: 8px 0;
+  width: 100%;
+}
     .day-btn { background: #eee; }
     .today { background: #ffd966; }
   </style>
@@ -87,7 +87,7 @@
       fetch(formUrl, { method: "POST", mode: "no-cors" });
 
       alert("受付完了！");
-      showClasses(today); // 自動で戻す
+      liff.closeWindow(); // 自動で戻す
     }
 
     // ▼ 初期表示（今日）

@@ -42,7 +42,15 @@
   <div id="container"></div>
 
   <script>
-    liff.init({ liffId: "2008912129-TQRCpL9d" });
+    async function initLiff() {
+  try {
+    await liff.init({ liffId: "2008912129-TQRCpL9d" });
+  } catch (e) {
+    alert("LINEアプリで開いてください");
+  }
+}
+
+initLiff();
 
     const params = new URLSearchParams(window.location.search);
     const member = params.get("member");

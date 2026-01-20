@@ -14,12 +14,13 @@
     /* 曜日ボタン（小さめ・横並び） */
     .day-btn {
       font-size: 14px;
-      padding: 6px 8px;
-      margin: 3px;
-      width: auto;
+      padding: 6px 10px;
+      margin: 4px 2px;
+      opacity: 0.6;
     }
 
     .day-btn.today {
+      opacity: 1;
       background: #66adff;
       color: #fff;
       font-weight: bold;
@@ -109,7 +110,7 @@ initLiff();
 
       (classes[day] || []).forEach(cls => {
         const btn = document.createElement("button");
-        btn.textContent = cls;
+        btn.textContent = "受付 ▶" ＋ cls;
         btn.className = "class-btn";
         btn.onclick = () => submit(cls);
         container.appendChild(btn);
@@ -127,6 +128,11 @@ let submitting = false; // ★連打防止フラグ
     "&entry.403922703=" + encodeURIComponent(className);
 
   fetch(formUrl, { method: "POST", mode: "no-cors" });
+
+  container.innerHTML = "";
+dayButtons.innerHTML = "";
+title.textContent = "";
+
 
   // ▼ 受付完了表示
   document.getElementById("complete").style.display = "flex";
@@ -147,7 +153,8 @@ let submitting = false; // ★連打防止フラグ
     showClasses(today);
   </script>
   <div id="complete">
-  <div id="completeBox">受付完了！</div>
+  <div id="completeBox">✅ 受付完了<br>
+  次の会員を読み取ってください</div>
 </div>
 
 </body>

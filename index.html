@@ -10,20 +10,38 @@
 
   <script>
     async function main() {
-      // 2008912129-TQRCpL9d
       await liff.init({ liffId: "2008912129-TQRCpL9d" });
 
-      // URLパラメータ取得
       const params = new URLSearchParams(window.location.search);
       const member = params.get("member");
+      const className = params.get("class");
 
-      let formUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/viewform";
-
+      // 会員QRを読んだ時
       if (member) {
-        formUrl += "?entry.71375240=" + encodeURIComponent(member);
+        localStorage.setItem("member", member);
+        alert("会員番号を読み取りました。\n次にクラスQRを読んでください");
+        return;
       }
 
-      window.location.href = formUrl;
+      // クラスQRを読んだ時
+      if (className) {
+        const savedMember = localStorage.getItem("member");
+
+        if (!savedMember) {
+          alert("先に会員QRを読み取ってください");
+          return;
+        }
+
+        let formUrl =
+          "https://docs.google.com/forms/d/e/XXXXX/viewform"
+          + "?entry.111111=" + encodeURIComponent(savedMember)
+          + "&entry.222222=" + encodeURIComponent(className);
+
+        // 会員番号を使い終わったら消す（連続誤登録防止）
+        localStorage.removeItem("member");
+
+        window.location.href = formUrl;
+      }
     }
 
     main();

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>手入力受付</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 14px;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    input {
+      font-size: 20px;
+      padding: 14px;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    /* 曜日ボタン（小） */
+    .day-btn {
+      font-size: 14px;
+      padding: 6px 10px;
+      margin: 4px 2px;
+      opacity: 0.6;
+    }
+
+    .day-btn.today {
+      opacity: 1;
+      background: #66adff;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* クラスボタン（大） */
+    .class-btn {
+      font-size: 20px;
+      padding: 18px;
+      margin: 10px 0;
+      width: 100%;
+    }
+
+    /* 完了オーバーレイ */
+    #complete {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    #completeBox {
+      background: #fff;
+      padding: 50px 40px;
+      border-radius: 16px;
+      font-size: 36px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2 id="title">会員番号を入力</h2>
+
+  <!-- 会員番号入力 -->
+  <div id="memberInputArea">
+    <input id="memberInput" placeholder="会員番号を入力">
+    <button class="class-btn" onclick="start()">次へ</button>
+  </div>
+
+  <!-- 曜日ボタン -->
+  <div id="dayButtons"></div>
+
+  <!-- クラスボタン -->
+  <div id="container"></div>
+
+  <!-- 完了表示 -->
+  <div id="complete">
+    <div id="completeBox">
+      ✅ 受付完了<br>
+      次の会員を受付してください
+    </div>
+  </div>
+
+<script>
+  // ▼ LIFF初期化
+  liff.init({ liffId: "2008912129-TQRCpL9d" });
+
+  let member = "";
+  let submitting = false;
+
+  const dayMap = ["日", "月", "火", "水", "木", "金", "土"];
+
+  const classes = {
+    "月": ["UCCHY初級", "UCCHY中級", "SHINYA", "あすぴ"],
+    "火": ["SHO-TA", "KIBE初級", "KIBE中級", "MIZUKI"],
+    "水": ["AIRI初級", "AIRI中級", "ruchica"],
+    "木": ["SERINAキッズ", "SERINA初中級", "RIN", "Shogo", "心"],
+    "金": ["manaキッズ", "mana初級", "KANAMI", "RYUYA", "SAMURAI"],
+    "土": ["幼児", "nikoキッズ", "SAORI", "TAKUEI", "愛梨", "MAHIRO初級", "MAHIRO中級"],
+    "日": ["2/1キッズ中級", "2/15キッズ中級"]
+  };
+
+  const title = document.getElementById("title");
+  const container = document.getElementById("container");
+  const dayButtons = document.getElementById("dayButtons");
+  const memberInputArea = document.getElementById("memberInputArea");
+
+  function start() {
+    member = document.getElementById("memberInput").value.trim();
+    if (!member) {
+      alert("会員番号を入力してください");
+      return;
+    }
+
+    memberInputArea.style.display = "none";
+    title.textContent = "本日のクラス";
+    renderDayButtons(today);
+    showClasses(today);
+  }
+
+  function renderDayButtons(today) {
+    dayButtons.innerHTML = "";
+    dayMap.forEach(day => {
+      const btn = document.createElement("button");
+      btn.textContent = day + "曜";
+      btn.className = "day-btn" + (day === today ? " today" : "");
+      btn.onclick = () => showClasses(day);
+      dayButtons.appendChild(btn);
+    });
+  }
+
+  function showClasses(day) {
+    title.textContent = "本日のクラス（" + day + "曜日）";
+    container.innerHTML = "";
+
+    (classes[day] || []).forEach(cls => {
+      const btn = document.createElement("button");
+      btn.textContent = "受付 ▶ " + cls;
+      btn.className = "class-btn";
+      btn.onclick = () => submit(cls);
+      container.appendChild(btn);
+    });
+  }
+
+  function submit(className) {
+    if (submitting) return;
+    submitting = true;
+
+    const formUrl =
+      "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
+      "?entry.71375240=" + encodeURIComponent(member) +
+      "&entry.403922703=" + encodeURIComponent(className);
+
+    fetch(formUrl, { method: "POST", mode: "no-cors" });
+
+    document.getElementById("complete").style.display = "flex";
+
+    setTimeout(() => {
+      liff.closeWindow();
+    }, 1200);
+  }
+
+  const today = dayMap[new Date().getDay()];
+</script>
+
+</body>
+</html>

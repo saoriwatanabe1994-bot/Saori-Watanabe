@@ -4,40 +4,51 @@
   <meta charset="UTF-8">
   <title>受付</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
-    body { font-family: sans-serif; padding: 10px; }
-   button {
-  font-size: 20px;
-  padding: 18px;
-  margin: 8px 0;
-  width: 100%;
-}
-    .day-btn { background: #eee; }
-    .today { background: #66adff; }
+    body {
+      font-family: sans-serif;
+      padding: 10px;
+    }
+
+    /* 曜日ボタン（小さめ・横並び） */
+    .day-btn {
+      font-size: 14px;
+      padding: 6px 8px;
+      margin: 3px;
+      width: auto;
+    }
+
+    .day-btn.today {
+      background: #66adff;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    /* クラスボタン（大きめ・縦） */
+    .class-btn {
+      font-size: 20px;
+      padding: 18px;
+      margin: 10px 0;
+      width: 100%;
+    }
   </style>
 </head>
 
 <body>
   <h2 id="title"></h2>
 
-  <!-- 曜日ボタン -->
   <div id="dayButtons"></div>
-
-  <!-- クラスボタン -->
   <div id="container"></div>
 
   <script>
-    // ▼ LIFF初期化（あなたのID）
     liff.init({ liffId: "2008912129-TQRCpL9d" });
 
-    // ▼ URLから会員番号取得
     const params = new URLSearchParams(window.location.search);
     const member = params.get("member");
 
-    // ▼ 曜日マップ
     const dayMap = ["日", "月", "火", "水", "木", "金", "土"];
 
-    // ▼ クラス定義（例：自由に増やしてOK）
     const classes = {
       "月": ["UCCHY初級", "UCCHY中級", "SHINYA", "あすぴ"],
       "火": ["SHO-TA", "KIBE初級", "KIBE中級", "MIZUKI"],
@@ -52,33 +63,30 @@
     const container = document.getElementById("container");
     const dayButtons = document.getElementById("dayButtons");
 
-    // ▼ 曜日ボタン生成（常に表示）
     function renderDayButtons(today) {
-  dayButtons.innerHTML = "";
-  dayMap.forEach(day => {
-    const btn = document.createElement("button");
-    btn.textContent = day + "曜";
-    btn.className = "day-btn" + (day === today ? " today" : "");
-    btn.onclick = () => showClasses(day);
-    dayButtons.appendChild(btn);
-  });
-}
+      dayButtons.innerHTML = "";
+      dayMap.forEach(day => {
+        const btn = document.createElement("button");
+        btn.textContent = day + "曜";
+        btn.className = "day-btn" + (day === today ? " today" : "");
+        btn.onclick = () => showClasses(day);
+        dayButtons.appendChild(btn);
+      });
+    }
 
-    // ▼ クラス表示
     function showClasses(day) {
       title.textContent = "本日のクラス（" + day + "曜日）";
       container.innerHTML = "";
 
-     (classes[day] || []).forEach(cls => {
-  const btn = document.createElement("button");
-  btn.textContent = cls;
-  btn.className = "class-btn";
-  btn.onclick = () => submit(cls);
-  container.appendChild(btn);
-});
-}      
+      (classes[day] || []).forEach(cls => {
+        const btn = document.createElement("button");
+        btn.textContent = cls;
+        btn.className = "class-btn";
+        btn.onclick = () => submit(cls);
+        container.appendChild(btn);
+      });
+    }
 
-    // ▼ フォーム送信
     function submit(className) {
       const formUrl =
         "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
@@ -88,10 +96,9 @@
       fetch(formUrl, { method: "POST", mode: "no-cors" });
 
       alert("受付完了！");
-      liff.closeWindow(); // 自動で戻す
+      liff.closeWindow();
     }
 
-    // ▼ 初期表示（今日）
     const today = dayMap[new Date().getDay()];
     renderDayButtons(today);
     showClasses(today);

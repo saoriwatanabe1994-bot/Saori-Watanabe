@@ -4,45 +4,96 @@
   <meta charset="UTF-8">
   <title>受付</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 10px; }
+    button {
+      font-size: 16px;
+      padding: 10px;
+      margin: 5px;
+      width: 45%;
+    }
+    .day-btn { background: #eee; }
+    .today { background: #ffd966; }
+  </style>
 </head>
+
 <body>
-  <p>受付中です…</p>
+  <h2 id="title"></h2>
+
+  <!-- 曜日ボタン -->
+  <div id="dayButtons"></div>
+
+  <!-- クラスボタン -->
+  <div id="container"></div>
 
   <script>
-    async function main() {
-      await liff.init({ liffId: "2008912129-TQRCpL9d" });
+    // ▼ LIFF初期化（あなたのID）
+    liff.init({ liffId: "2008912129-TQRCpL9d" });
 
-      const params = new URLSearchParams(window.location.search);
-      const member = params.get("member");
-      const className = params.get("class");
+    // ▼ URLから会員番号取得
+    const params = new URLSearchParams(window.location.search);
+    const member = params.get("member");
 
-      // 会員QRを読んだとき
-      if (member) {
-        localStorage.setItem("member", member);
-        document.body.innerHTML = "<h2>会員認証OK<br>次にクラスQRを読み取ってください</h2>";
-        return;
-      }
+    // ▼ 曜日マップ
+    const dayMap = ["日", "月", "火", "水", "木", "金", "土"];
 
-      // クラスQRを読んだとき
-      if (className) {
-        const savedMember = localStorage.getItem("member");
+    // ▼ クラス定義（例：自由に増やしてOK）
+    const classes = {
+      "月": ["UCCHY初級", "UCCHY中級", "SHINYA", "あすぴ"],
+      "火": ["SHO-TA", "KIBE初級", "KIBE中級", "MIZUKI"],
+      "水": ["AIRI初級", "AIRI中級", "ruchica"],
+      "木": ["SERINAキッズ", "SERINA初中級", "RIN", "Shogo", "心"],
+      "金": ["manaキッズ", "mana初級", "KANAMI", "RYUYA", "SAMURAI"],
+      "土": ["幼児", "nikoキッズ", "SAORI", "TAKUEI", "愛梨", "MAHIRO初級", "MAHIRO中級"],
+      "日": ["2/1キッズ中級", "2/15キッズ中級"]
+    };
 
-        if (!savedMember) {
-          document.body.innerHTML = "<h2>先に会員QRを読み取ってください</h2>";
-          return;
-        }
+    const title = document.getElementById("title");
+    const container = document.getElementById("container");
+    const dayButtons = document.getElementById("dayButtons");
 
-        let formUrl =
-          "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/viewform" +
-          "?entry.71375240=" + encodeURIComponent(savedMember) +
-          "&entry.403922703=" + encodeURIComponent(className);
-
-        // 次の受付に備えて会員番号は残す（連続受講OK）
-        window.location.href = formUrl;
-      }
+    // ▼ 曜日ボタン生成（常に表示）
+    function renderDayButtons(today) {
+      dayButtons.innerHTML = "";
+      dayMap.forEach(day => {
+        const btn = document.createElement("button");
+        btn.textContent = day + "曜";
+        btn.className = "day-btn" + (day === today ? " today" : "");
+        btn.onclick = () => showClasses(day);
+        dayButtons.appendChild(btn);
+      });
     }
 
-    main();
+    // ▼ クラス表示
+    function showClasses(day) {
+      title.textContent = "本日のクラス（" + day + "曜日）";
+      container.innerHTML = "";
+
+      (classes[day] || []).forEach(cls => {
+        const btn = document.createElement("button");
+        btn.textContent = cls;
+        btn.onclick = () => submit(cls);
+        container.appendChild(btn);
+      });
+    }
+
+    // ▼ フォーム送信
+    function submit(className) {
+      const formUrl =
+        "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
+        "?entry.71375240=" + encodeURIComponent(member) +
+        "&entry.403922703=" + encodeURIComponent(className);
+
+      fetch(formUrl, { method: "POST", mode: "no-cors" });
+
+      alert("受付完了！");
+      showClasses(today); // 自動で戻す
+    }
+
+    // ▼ 初期表示（今日）
+    const today = dayMap[new Date().getDay()];
+    renderDayButtons(today);
+    showClasses(today);
   </script>
 </body>
 </html>

@@ -110,7 +110,7 @@ initLiff();
 
       (classes[day] || []).forEach(cls => {
         const btn = document.createElement("button");
-        btn.textContent = "受付 ▶" ＋ cls;
+        btn.textContent = "受付 ▶ " + cls;
         btn.className = "class-btn";
         btn.onclick = () => submit(cls);
         container.appendChild(btn);

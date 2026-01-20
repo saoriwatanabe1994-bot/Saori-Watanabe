@@ -46,9 +46,9 @@
 
   #completeBox {
     background: #fff;
-    padding: 40px;
-    border-radius: 12px;
-    font-size: 24px;
+    padding: 50px 40px;
+  border-radius: 16px;
+  font-size: 36px;
     font-weight: bold;
     text-align: center;
   }
@@ -115,8 +115,12 @@ initLiff();
         container.appendChild(btn);
       });
     }
-
+let submitting = false; // ★連打防止フラグ
+    
     function submit(className) {
+      if (submitting) return;   // ★2回目以降は無視
+  submitting = true;
+      
   const formUrl =
     "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
     "?entry.71375240=" + encodeURIComponent(member) +
@@ -124,8 +128,13 @@ initLiff();
 
   fetch(formUrl, { method: "POST", mode: "no-cors" });
 
-  // ▼ alertを使わない！
+  // ▼ 受付完了表示
   document.getElementById("complete").style.display = "flex";
+
+    // ▼ 念のためボタン全部無効化
+  document.querySelectorAll("button").forEach(btn => {
+    btn.disabled = true;
+  }); 
 
   // ▼ 1.2秒後に自動で閉じる
   setTimeout(() => {

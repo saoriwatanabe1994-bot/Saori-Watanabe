@@ -32,6 +32,27 @@
       margin: 10px 0;
       width: 100%;
     }
+
+  /* 受付完了オーバーレイ */
+  #complete {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+  }
+
+  #completeBox {
+    background: #fff;
+    padding: 40px;
+    border-radius: 12px;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+  }
+
   </style>
 </head>
 
@@ -96,21 +117,30 @@ initLiff();
     }
 
     function submit(className) {
-      const formUrl =
-        "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
-        "?entry.71375240=" + encodeURIComponent(member) +
-        "&entry.403922703=" + encodeURIComponent(className);
+  const formUrl =
+    "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
+    "?entry.71375240=" + encodeURIComponent(member) +
+    "&entry.403922703=" + encodeURIComponent(className);
 
-      fetch(formUrl, { method: "POST", mode: "no-cors" });
+  fetch(formUrl, { method: "POST", mode: "no-cors" });
 
-      alert("受付完了！");
-      liff.closeWindow();
-    }
+  // ▼ alertを使わない！
+  document.getElementById("complete").style.display = "flex";
+
+  // ▼ 1.2秒後に自動で閉じる
+  setTimeout(() => {
+    liff.closeWindow();
+  }, 1200);
+}
 
     const today = dayMap[new Date().getDay()];
     renderDayButtons(today);
     showClasses(today);
   </script>
+  <div id="complete">
+  <div id="completeBox">受付完了！</div>
+</div>
+
 </body>
 </html>
 

@@ -54,28 +54,28 @@
 
     // ▼ 曜日ボタン生成（常に表示）
     function renderDayButtons(today) {
-      dayButtons.innerHTML = "";
-      dayMap.forEach(day => {
-        const btn = document.createElement("button");
-        btn.textContent = day + "曜";
-        btn.className = "day-btn" + (day === today ? " today" : "");
-        btn.onclick = () => showClasses(day);
-        dayButtons.appendChild(btn);
-      });
-    }
+  dayButtons.innerHTML = "";
+  dayMap.forEach(day => {
+    const btn = document.createElement("button");
+    btn.textContent = day + "曜";
+    btn.className = "day-btn" + (day === today ? " today" : "");
+    btn.onclick = () => showClasses(day);
+    dayButtons.appendChild(btn);
+  });
+}
 
     // ▼ クラス表示
     function showClasses(day) {
       title.textContent = "本日のクラス（" + day + "曜日）";
       container.innerHTML = "";
 
-      (classes[day] || []).forEach(cls => {
-        const btn = document.createElement("button");
-        btn.textContent = cls;
-        btn.onclick = () => submit(cls);
-        container.appendChild(btn);
-      });
-    }
+     (classes[day] || []).forEach(cls => {
+  const btn = document.createElement("button");
+  btn.textContent = cls;
+  btn.className = "class-btn";
+  btn.onclick = () => submit(cls);
+  container.appendChild(btn);
+});
 
     // ▼ フォーム送信
     function submit(className) {

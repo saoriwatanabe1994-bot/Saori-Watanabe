@@ -16,30 +16,28 @@
       const member = params.get("member");
       const className = params.get("class");
 
-      // 会員QRを読んだ時
+      // 会員QRを読んだとき
       if (member) {
         localStorage.setItem("member", member);
-        alert("会員番号を読み取りました。\n次にクラスQRを読んでください");
+        document.body.innerHTML = "<h2>会員認証OK<br>次にクラスQRを読み取ってください</h2>";
         return;
       }
 
-      // クラスQRを読んだ時
+      // クラスQRを読んだとき
       if (className) {
         const savedMember = localStorage.getItem("member");
 
         if (!savedMember) {
-          alert("先に会員QRを読み取ってください");
+          document.body.innerHTML = "<h2>先に会員QRを読み取ってください</h2>";
           return;
         }
 
         let formUrl =
-          "https://docs.google.com/forms/d/e/XXXXX/viewform"
-          + "?entry.111111=" + encodeURIComponent(savedMember)
-          + "&entry.222222=" + encodeURIComponent(className);
+          "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/viewform" +
+          "?entry.71375240=" + encodeURIComponent(savedMember) +
+          "&entry.403922703=" + encodeURIComponent(className);
 
-        // 会員番号を使い終わったら消す（連続誤登録防止）
-        localStorage.removeItem("member");
-
+        // 次の受付に備えて会員番号は残す（連続受講OK）
         window.location.href = formUrl;
       }
     }
@@ -48,3 +46,4 @@
   </script>
 </body>
 </html>
+

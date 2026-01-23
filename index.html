@@ -28,17 +28,18 @@
 
     /* クラスボタン（大きめ・縦） */
     .class-btn {
-      font-size: 20px;
-      padding: 18px;
-      margin: 10px 0;
-      width: 100%;
-    }
+  font-size: 20px;
+  padding: 30px 18px; /* ←縦幅UP（ここを 34px とかにしてもOK） */
+  margin: 12px 0;
+  width: 100%;
+  text-align: left;
+}
 
   /* 受付完了オーバーレイ */
   #complete {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0,0,0,0.65);
     display: none;
     align-items: center;
     justify-content: center;
@@ -48,10 +49,13 @@
   #completeBox {
     background: #fff;
     padding: 50px 40px;
-  border-radius: 16px;
-  font-size: 36px;
-    font-weight: bold;
+  border-radius: 18px;
     text-align: center;
+    width: 90%;
+    max-width: 420px;
+  font-size: 36px;
+    font-weight: 700;
+  line-height: 1.6;
   }
 
   </style>
@@ -116,36 +120,42 @@ initLiff();
         container.appendChild(btn);
       });
     }
-let submitting = false; // ★連打防止フラグ
-    
-    function submit(className) {
-      if (submitting) return;   // ★2回目以降は無視
+let submitting = false;
+
+function submit(className) {
+  if (submitting) return;  // 連打防止
   submitting = true;
-      
+
   const formUrl =
-    "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
+    "https://docs.google.com/forms/d/e/xxxxxxxxxxxxxxxxxxxx/formResponse" +
     "?entry.71375240=" + encodeURIComponent(member) +
     "&entry.403922703=" + encodeURIComponent(className);
 
   fetch(formUrl, { method: "POST", mode: "no-cors" });
 
-  container.innerHTML = "";
-dayButtons.innerHTML = "";
-title.textContent = "";
+  // ✅ 受付完了表示（クラス名を出す）
+  const complete = document.getElementById("complete");
+  const completeDetail = document.getElementById("completeDetail");
+  completeDetail.innerHTML =
+    "✅ 受付完了<br>" +
+    "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
+    "次の会員を読み取ってください";
+  complete.style.display = "flex";
 
-
-  // ▼ 受付完了表示
-  document.getElementById("complete").style.display = "flex";
-
-    // ▼ 念のためボタン全部無効化
-  document.querySelectorAll("button").forEach(btn => {
-    btn.disabled = true;
-  }); 
-
-  // ▼ 1.2秒後に自動で閉じる
+  // 1.2秒後に閉じる（index版は次会員を読む流れなら closeWindow が自然）
   setTimeout(() => {
     liff.closeWindow();
   }, 1200);
+}
+
+// 念のためHTMLエスケープ
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
 
     const today = dayMap[new Date().getDay()];
@@ -156,7 +166,11 @@ title.textContent = "";
   <div id="completeBox">✅ 受付完了<br>
   次の会員を読み取ってください</div>
 </div>
-
+<div id="complete">
+  <div id="completeBox">
+    <div id="completeDetail"></div>
+  </div>
+</div>
 </body>
 </html>
 

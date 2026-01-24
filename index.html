@@ -6,10 +6,7 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 10px;
-    }
+    body { font-family: sans-serif; padding: 10px; }
 
     /* 曜日ボタン（小さめ・横並び） */
     .day-btn {
@@ -18,7 +15,6 @@
       margin: 4px 2px;
       opacity: 0.6;
     }
-
     .day-btn.today {
       opacity: 1;
       background: #66adff;
@@ -28,36 +24,38 @@
 
     /* クラスボタン（大きめ・縦） */
     .class-btn {
-  font-size: 20px;
-  padding: 34px 18px; /* ←縦幅UP（ここを 34px とかにしてもOK） */
-  margin: 12px 0;
-  width: 100%;
-  text-align: left;
-}
+      font-size: 20px;
+      padding: 34px 18px;   /* ←縦幅UP */
+      margin: 12px 0;
+      width: 100%;
+      text-align: left;
+    }
 
-  /* 受付完了オーバーレイ */
-  #complete {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 999;
-  }
-
-  #completeBox {
-    background: #fff;
-    padding: 50px 40px;
-  border-radius: 18px;
-    text-align: center;
-    width: 90%;
-    max-width: 420px;
-  font-size: 36px;
-    font-weight: 700;
-  line-height: 1.6;
-  }
-
+    /* 受付完了オーバーレイ */
+    #complete {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    #completeBox {
+      background: #fff;
+      padding: 44px 34px;
+      border-radius: 18px;
+      text-align: center;
+      width: 90%;
+      max-width: 420px;
+      line-height: 1.6;
+    }
+    #completeDetail {
+      font-size: 28px;
+      font-weight: 700;
+      word-break: break-word;
+    }
+    #completeDetail b { font-size: 30px; }
   </style>
 </head>
 
@@ -67,16 +65,22 @@
   <div id="dayButtons"></div>
   <div id="container"></div>
 
+  <!-- ✅ completeは1個だけにする（重要） -->
+  <div id="complete">
+    <div id="completeBox">
+      <div id="completeDetail"></div>
+    </div>
+  </div>
+
   <script>
     async function initLiff() {
-  try {
-    await liff.init({ liffId: "2008912129-TQRCpL9d" });
-  } catch (e) {
-    alert("LINEアプリで開いてください");
-  }
-}
-
-initLiff();
+      try {
+        await liff.init({ liffId: "2008912129-TQRCpL9d" });
+      } catch (e) {
+        alert("LINEアプリで開いてください");
+      }
+    }
+    initLiff();
 
     const params = new URLSearchParams(window.location.search);
     const member = params.get("member");
@@ -86,7 +90,7 @@ initLiff();
     const classes = {
       "月": ["UCCHY初級", "UCCHY中級", "SHINYA", "あすぴ", "K×G中村キッズ", "K×G中村オープン", "K×G長久手"],
       "火": ["SHO-TA", "KIBE初級", "KIBE中級", "MIZUKI", "K×G茶屋ヶ坂"],
-      "水": ["AIRI初級", "AIRI中級", "ruchica","K×G高針キッズ", "K×G高針オープン"],
+      "水": ["AIRI初級", "AIRI中級", "ruchica", "K×G高針キッズ", "K×G高針オープン"],
       "木": ["SERINAキッズ", "SERINA初中級", "Shogo", "RIN", "心", "K×G瀬戸"],
       "金": ["manaキッズ", "mana初級", "KANAMI", "RYUYA", "SAMURAI"],
       "土": ["幼児", "nikoキッズ", "SAORI", "TAKUEI", "愛梨", "MAHIRO初級", "MAHIRO中級"],
@@ -120,57 +124,55 @@ initLiff();
         container.appendChild(btn);
       });
     }
-let submitting = false;
 
-function submit(className) {
-  if (submitting) return;  // 連打防止
-  submitting = true;
+    let submitting = false;
 
-  const formUrl =
-    "https://docs.google.com/forms/d/e/xxxxxxxxxxxxxxxxxxxx/formResponse" +
-    "?entry.71375240=" + encodeURIComponent(member) +
-    "&entry.403922703=" + encodeURIComponent(className);
+    function submit(className) {
+      if (submitting) return; // 連打防止
+      submitting = true;
 
-  fetch(formUrl, { method: "POST", mode: "no-cors" });
+      // memberが無いと送れないのでガード（念のため）
+      if (!member) {
+        alert("会員QRを読み取ってください（memberが取得できません）");
+        submitting = false;
+        return;
+      }
 
-  // ✅ 受付完了表示（クラス名を出す）
-  const complete = document.getElementById("complete");
-  const completeDetail = document.getElementById("completeDetail");
-  completeDetail.innerHTML =
-    "✅ 受付完了<br>" +
-    "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
-    "次の会員を読み取ってください";
-  complete.style.display = "flex";
-  
-  // 1.2秒後に閉じる（index版は次会員を読む流れなら closeWindow が自然）
-  setTimeout(() => {
-    liff.closeWindow();
-  }, 1200);
-}
+      const formUrl =
+        "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
+        "?entry.71375240=" + encodeURIComponent(member) +
+        "&entry.403922703=" + encodeURIComponent(className);
 
-// 念のためHTMLエスケープ
-function escapeHtml(str) {
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
+      fetch(formUrl, { method: "POST", mode: "no-cors" });
+
+      // ✅ 受付完了表示（クラス名を出す）
+      const complete = document.getElementById("complete");
+      const completeDetail = document.getElementById("completeDetail");
+
+      completeDetail.innerHTML =
+        "✅ 受付完了<br>" +
+        "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
+        "次の会員を読み取ってください";
+
+      complete.style.display = "flex";
+
+      setTimeout(() => {
+        liff.closeWindow();
+      }, 1200);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
 
     const today = dayMap[new Date().getDay()];
     renderDayButtons(today);
     showClasses(today);
   </script>
-  <div id="complete">
-  <div id="completeBox">✅ 受付完了<br>
-  次の会員を読み取ってください</div>
-</div>
-<div id="complete">
-  <div id="completeBox">
-    <div id="completeDetail"></div>
-  </div>
-</div>
 </body>
 </html>
-

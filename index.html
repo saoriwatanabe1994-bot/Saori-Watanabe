@@ -21,6 +21,12 @@
       color: #fff;
       font-weight: bold;
     }
+    .complete-title {
+  font-size: 40px;   /* ← 今より一回り大きく */
+  font-weight: 800;
+  display: block;
+}
+
 
     /* クラスボタン（大きめ・縦） */
     .class-btn {
@@ -56,6 +62,7 @@
       word-break: break-word;
     }
     #completeDetail b { font-size: 30px; }
+    
   </style>
 </head>
 
@@ -150,10 +157,11 @@
       const completeDetail = document.getElementById("completeDetail");
 
       completeDetail.innerHTML =
-  "✅ 受付完了<br><br>" +
+  "<span class='complete-title'>✅ 受付完了</span><br><br>" +
   "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
   "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
   "次の会員を読み取ってください";
+
       complete.style.display = "flex";
 
       setTimeout(() => {

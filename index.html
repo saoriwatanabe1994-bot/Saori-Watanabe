@@ -44,17 +44,20 @@
       z-index: 999;
     }
     #completeBox {
-      background: #fff;
-      padding: 44px 34px;
-      border-radius: 18px;
-      text-align: center;
-      width: 94%;
-      max-width: 560px;
-      line-height: 1.6;
-    }
+  background: #fff;
+  padding: 44px 20px;    /* ← 横paddingを減らす（中身が広くなる） */
+  border-radius: 18px;
+  text-align: center;
+  width: 98%;            /* ← 画面いっぱい寄せ */
+  max-width: 560px;
+  box-sizing: border-box;
+  line-height: 1.6;
+}
     #completeDetail {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
+  word-break: normal;      /* ← break-word をやめる */
+  overflow-wrap: normal;   /* ← 保険 */
 }
 
 #completeDetail b {
@@ -160,11 +163,11 @@
       const complete = document.getElementById("complete");
       const completeDetail = document.getElementById("completeDetail");
 
-      completeDetail.innerHTML =
+     completeDetail.innerHTML =
   "<span class='complete-title'>✅ 受付完了</span><br><br>" +
   "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
   "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
-  "次の会員を読み取ってください";
+  "<span class='nowrap'>次の会員を読み取ってください</span>";
 
       complete.style.display = "flex";
 

@@ -21,13 +21,16 @@
 memberInput.addEventListener("input", () => {
   let v = memberInput.value;
 
-  // 全角数字 → 半角数字
-  v = v.replace(/[０-９]/g, s =>
+  // 全角英数字 → 半角
+  v = v.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s =>
     String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
   );
 
-  // 数字以外を削除
-  v = v.replace(/[^0-9]/g, "");
+  // 英字は大文字に統一
+  v = v.toUpperCase();
+
+  // 許可する文字：A-Z 0-9 -
+  v = v.replace(/[^A-Z0-9-]/g, "");
 
   memberInput.value = v;
 });

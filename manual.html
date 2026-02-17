@@ -151,7 +151,7 @@
     // 初回だけ「今日」
     if (!selectedDay) {
       selectedDay = getTokyoWeekdayLabel();
-      if (selectedDay === "日") selectedDay = "月"; // 日曜ボタン無しなら保険
+      if (selectedDay === "日") selectedDay = "土"; // 日曜ボタン無しなら保険
     }
 
     renderAll();

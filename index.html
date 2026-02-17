@@ -89,93 +89,17 @@
     </div>
   </div>
 <script>
-  async function initLiff() {
-    try {
-      await liff.init({ liffId: "2008912129-TQRCpL9d" });
-    } catch (e) {
-      alert("LINEアプリで開いてください");
-    }
-  }
-  initLiff();
+  initLiffSafe();
 
   const params = new URLSearchParams(window.location.search);
   const member = params.get("member");
-
-  const dayMap = ["月", "火", "水", "木", "金", "土", "WS"];
-
-  const classes = {
-    "月": ["UCCHY初級", "UCCHY中級", "SHINYA", "あすぴ", "K×G中村キッズ", "K×G中村オープン", "K×G長久手"],
-    "火": ["SHO-TA", "KIBE初級", "KIBE中級", "MIZUKI", "K×G茶屋ヶ坂"],
-    "水": ["AIRI初級", "AIRI中級", "ruchica", "K×G高針キッズ", "K×G高針オープン"],
-    "木": ["SERINAキッズ", "SERINA初中級", "Shogo", "RIN", "心", "K×G瀬戸"],
-    "金": ["manaキッズ", "mana初級", "KANAMI", "RYUYA", "SAMURAI"],
-    "土": ["幼児", "nikoキッズ", "SAORI", "TAKUEI", "愛梨", "MAHIRO初級", "MAHIRO中級"],
-    "WS": ["WS_2/1キッズ中級", "WS_2/15キッズ中級","WS_2/7cocona練習会","WS_2/14cocona練習会","WS_2/21Rena練習会","WS_2/27Rena練習会","WS_3/7konoka練習会","WS_3/14konoka練習会"]
-  };
 
   const title = document.getElementById("title");
   const container = document.getElementById("container");
   const dayButtons = document.getElementById("dayButtons");
 
-  // ✅ 東京時間で「今日の曜日」を正しく取得
-  function getTokyoWeekdayLabel() {
-    // "Mon" などが返る
-    const wd = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Tokyo",
-      weekday: "short"
-    }).format(new Date());
-
-    const map = {
-      Sun: "日",
-      Mon: "月",
-      Tue: "火",
-      Wed: "水",
-      Thu: "木",
-      Fri: "金",
-      Sat: "土"
-    };
-    return map[wd] || "月";
-  }
-
-  // ✅ 選択中の曜日（最初は今日）
   let selectedDay = getTokyoWeekdayLabel();
-
-  function renderDayButtons() {
-    dayButtons.innerHTML = "";
-    dayMap.forEach(day => {
-      const btn = document.createElement("button");
-
-      // ✅ WSだけ「WS」にする（WS曜にならない）
-      btn.textContent = (day === "WS") ? "WS" : (day + "曜");
-
-      // ✅ 青くするのは「今日」ではなく「選択中」
-      btn.className = "day-btn" + (day === selectedDay ? " today" : "");
-
-      btn.onclick = () => {
-        selectedDay = day;
-        renderDayButtons();
-        showClasses(day);
-      };
-
-      dayButtons.appendChild(btn);
-    });
-  }
-
-  function showClasses(day) {
-    // 表示文言はそのまま（選択した曜日を表示）
-    title.textContent = "本日のクラス（" + day + "曜日）";
-    if (day === "WS") title.textContent = "本日のクラス（WS）";
-
-    container.innerHTML = "";
-
-    (classes[day] || []).forEach(cls => {
-      const btn = document.createElement("button");
-      btn.textContent = "受付 ▶ " + cls;
-      btn.className = "class-btn";
-      btn.onclick = () => submit(cls);
-      container.appendChild(btn);
-    });
-  }
+  if (selectedDay === "日") selectedDay = "月"; // 日曜ボタンが無いなら保険
 
   let submitting = false;
 
@@ -189,41 +113,45 @@
       return;
     }
 
-    const formUrl =
-      "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse" +
-      "?entry.71375240=" + encodeURIComponent(member) +
-      "&entry.403922703=" + encodeURIComponent(className);
+    const url =
+      APP_CONFIG.FORM_RESPONSE +
+      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
+      "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-    fetch(formUrl, { method: "POST", mode: "no-cors" });
+    fetch(url, { method: "POST", mode: "no-cors" });
 
     const complete = document.getElementById("complete");
     const completeDetail = document.getElementById("completeDetail");
-
     completeDetail.innerHTML =
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
       "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
       "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
       "<span class='nowrap'>次の会員を読み取ってください</span>";
-
     complete.style.display = "flex";
 
-    setTimeout(() => {
-      liff.closeWindow();
-    }, 1200);
+    setTimeout(() => liff.closeWindow(), 1200);
   }
 
-  function escapeHtml(str) {
-    return String(str)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+  function renderAll() {
+    renderDayButtons({
+      dayButtonsEl: dayButtons,
+      selectedDay,
+      onSelect: (day) => {
+        selectedDay = day;
+        renderAll();
+      },
+    });
+
+    renderClasses({
+      day: selectedDay,
+      titleEl: title,
+      containerEl: container,
+      onSubmit: submit,
+    });
   }
 
-  // ✅ 初期表示
-  renderDayButtons();
-  showClasses(selectedDay);
+  renderAll();
 </script>
+
 </body>
 </html>

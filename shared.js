@@ -15,7 +15,7 @@
   window.CLASSES_BY_DAY = {
     "月": ["UCCHY初級", "UCCHY中級", "SHINYA", "あすぴ", "K×G中村キッズ", "K×G中村オープン", "K×G長久手"],
     "火": ["SHO-TA", "KIBE初級", "KIBE中級", "MIZUKI", "K×G茶屋ヶ坂"],
-    "水": ["AIRI初級", "AIRI中級", "ruchica", "K×G高針キッズ", "K×G高針オープン"],
+    "水": ["スターター","AIRI初級", "AIRI中級", "ruchica", "K×G高針キッズ", "K×G高針オープン"],
     "木": ["SERINAキッズ", "SERINA初中級", "Shogo", "RIN", "心", "K×G瀬戸"],
     "金": ["manaキッズ", "mana初級", "KANAMI", "RYUYA", "SAMURAI"],
     "土": ["幼児", "nikoキッズ", "SAORI", "TAKUEI", "愛梨", "MAHIRO初級", "MAHIRO中級"],

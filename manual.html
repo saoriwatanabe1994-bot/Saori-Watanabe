@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>受付（手入力）</title>
+  
+  <script src="./shared.js"></script>
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
   <style>
@@ -106,28 +109,7 @@
     </div>
   </div>
 <script>
-  // ====== 設定 ======
-  const LIFF_ID = "2008912129-TQRCpL9d";
-  const FORM_RESPONSE =
-    "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse";
-  const ENTRY_MEMBER = "entry.71375240";
-  const ENTRY_CLASS  = "entry.403922703";
-
-  // index版に合わせた曜日＋WS
-  const dayMap = ["月","火","水","木","金","土","WS"];
-
-  // index版に合わせたクラス定義（必要ならここだけ更新）
-  const classes = {
-    "月": ["UCCHY初級", "UCCHY中級", "SHINYA", "あすぴ", "K×G中村キッズ", "K×G中村オープン", "K×G長久手"],
-    "火": ["SHO-TA", "KIBE初級", "KIBE中級", "MIZUKI", "K×G茶屋ヶ坂"],
-    "水": ["AIRI初級", "AIRI中級", "ruchica", "K×G高針キッズ", "K×G高針オープン"],
-    "木": ["SERINAキッズ", "SERINA初中級", "Shogo", "RIN", "心", "K×G瀬戸"],
-    "金": ["manaキッズ", "mana初級", "KANAMI", "RYUYA", "SAMURAI"],
-    "土": ["幼児", "nikoキッズ", "SAORI", "TAKUEI", "愛梨", "MAHIRO初級", "MAHIRO中級"],
-    "WS": ["WS_2/1キッズ中級", "WS_2/15キッズ中級","WS_2/7cocona練習会","WS_2/14cocona練習会","WS_2/21Rena練習会","WS_2/27Rena練習会","WS_3/7konoka練習会","WS_3/14konoka練習会"]
-  };
-
-  // ====== 要素 ======
+  // 要素
   const title = document.getElementById("title");
   const memberInput = document.getElementById("memberInput");
   const goBtn = document.getElementById("goBtn");
@@ -136,56 +118,22 @@
   const container = document.getElementById("container");
   const complete = document.getElementById("complete");
   const completeDetail = document.getElementById("completeDetail");
-
   const sectionInput = document.getElementById("sectionInput");
   const sectionSelect = document.getElementById("sectionSelect");
 
   let currentMember = "";
   let submitting = false;
+  let selectedDay = "";
 
-  // ✅ 選択中の曜日（最初は今日）
-  let selectedDay = "月";
-
-  // ====== 東京時間で「今日の曜日」を正しく取得 ======
-  function getTokyoWeekdayLabel() {
-    const wd = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Tokyo",
-      weekday: "short"
-    }).format(new Date());
-
-    const map = {
-      Sun: "日",
-      Mon: "月",
-      Tue: "火",
-      Wed: "水",
-      Thu: "木",
-      Fri: "金",
-      Sat: "土"
-    };
-    // manualは日曜ボタンを出してないので、日曜なら月に倒す（事故防止）
-    const label = map[wd] || "月";
-    return (label === "日") ? "月" : label;
-  }
-
-  // ====== 会員番号：全角→半角/英字大文字/不要文字除去 ======
+  // 全角→半角など
   memberInput.addEventListener("input", () => {
     let v = memberInput.value;
-
-    // 全角英数字 → 半角
-    v = v.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s =>
-      String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
-    );
-
-    // 英字は大文字に統一
+    v = v.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
     v = v.toUpperCase();
-
-    // 許可：A-Z 0-9 -
     v = v.replace(/[^A-Z0-9-]/g, "");
-
     memberInput.value = v;
   });
 
-  // ====== 画面切替 ======
   function showInputScreen() {
     sectionSelect.classList.remove("active");
     sectionInput.classList.add("active");
@@ -200,57 +148,23 @@
     sectionInput.classList.remove("active");
     sectionSelect.classList.add("active");
 
-    // ✅ 初回は「今日」を選択、以後は最後に選んだ曜日を維持
-    selectedDay = selectedDay || getTokyoWeekdayLabel();
+    // 初回だけ「今日」
+    if (!selectedDay) {
+      selectedDay = getTokyoWeekdayLabel();
+      if (selectedDay === "日") selectedDay = "月"; // 日曜ボタン無しなら保険
+    }
 
-    renderDayButtons();
-    showClasses(selectedDay);
+    renderAll();
   }
 
-  // ====== 曜日ボタン（押した曜日が青） ======
-  function renderDayButtons() {
-    dayButtons.innerHTML = "";
-    dayMap.forEach(day => {
-      const btn = document.createElement("button");
-
-      // ✅ WSだけ「WS」にする（WS曜にならない）
-      btn.textContent = (day === "WS") ? "WS" : (day + "曜");
-
-      // ✅ 青いのは「選択中」の曜日
-      btn.className = "day-btn" + (day === selectedDay ? " today" : "");
-
-      btn.onclick = () => {
-        selectedDay = day;
-        renderDayButtons();
-        showClasses(day);
-      };
-
-      dayButtons.appendChild(btn);
-    });
-  }
-
-  // ====== クラス表示 ======
-  function showClasses(day) {
-    title.textContent = (day === "WS") ? "本日のクラス（WS）" : ("本日のクラス（" + day + "曜日）");
-    container.innerHTML = "";
-
-    (classes[day] || []).forEach(cls => {
-      const btn = document.createElement("button");
-      btn.textContent = "受付 ▶ " + cls;
-      btn.className = "class-btn";
-      btn.onclick = () => submit(cls);
-      container.appendChild(btn);
-    });
-  }
-
-  // ====== 送信 ======
   function submit(className) {
     if (submitting) return;
     submitting = true;
 
-    const url = FORM_RESPONSE
-      + "?" + ENTRY_MEMBER + "=" + encodeURIComponent(currentMember)
-      + "&" + ENTRY_CLASS  + "=" + encodeURIComponent(className);
+    const url =
+      APP_CONFIG.FORM_RESPONSE +
+      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
+      "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
     fetch(url, { method: "POST", mode: "no-cors" });
 
@@ -267,42 +181,35 @@
     }, 1200);
   }
 
-  function escapeHtml(str){
-    return String(str)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+  function renderAll() {
+    renderDayButtons({
+      dayButtonsEl: dayButtons,
+      selectedDay,
+      onSelect: (day) => {
+        selectedDay = day;
+        renderAll();
+      },
+    });
+
+    renderClasses({
+      day: selectedDay,
+      titleEl: title,
+      containerEl: container,
+      onSubmit: submit,
+    });
   }
 
-  // ====== ボタン動作 ======
   goBtn.onclick = () => {
     const v = memberInput.value.trim();
-    if (!v) {
-      alert("会員番号を入力してください");
-      return;
-    }
+    if (!v) return alert("会員番号を入力してください");
     currentMember = v;
-
-    // ✅ 初回選択は東京時間の今日
-    if (!selectedDay) selectedDay = getTokyoWeekdayLabel();
-    if (selectedDay === "WS") selectedDay = getTokyoWeekdayLabel(); // いきなりWSに行かない保険
-
     showSelectScreen();
   };
 
   backBtn.onclick = () => showInputScreen();
 
-  // ====== LIFF init ======
   (async () => {
-    try {
-      await liff.init({ liffId: LIFF_ID });
-    } catch (e) {
-      // LINE外でも使う可能性があるので止めない
-    }
-    // 初期値
-    selectedDay = getTokyoWeekdayLabel();
+    await initLiffSafe();
     showInputScreen();
   })();
 </script>

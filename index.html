@@ -89,7 +89,8 @@
     </div>
   </div>
 <script>
-  initLiffSafe();
+(async () => {
+  await initLiffSafe();
 
   const params = new URLSearchParams(window.location.search);
   const member = params.get("member");
@@ -99,7 +100,7 @@
   const dayButtons = document.getElementById("dayButtons");
 
   let selectedDay = getTokyoWeekdayLabel();
-  if (selectedDay === "日") selectedDay = "月"; // 日曜ボタンが無いなら保険
+  if (selectedDay === "日") selectedDay = "月";
 
   let submitting = false;
 
@@ -122,11 +123,13 @@
 
     const complete = document.getElementById("complete");
     const completeDetail = document.getElementById("completeDetail");
+
     completeDetail.innerHTML =
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
       "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
       "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
       "<span class='nowrap'>次の会員を読み取ってください</span>";
+
     complete.style.display = "flex";
 
     setTimeout(() => liff.closeWindow(), 1200);
@@ -151,6 +154,7 @@
   }
 
   renderAll();
+})();
 </script>
 
 </body>

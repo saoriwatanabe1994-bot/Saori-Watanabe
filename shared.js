@@ -19,7 +19,7 @@
     "木": ["SERINAキッズ", "SERINA初中級", "Shogo", "RIN", "心", "K×G瀬戸"],
     "金": ["manaキッズ", "mana初級", "KANAMI", "RYUYA", "SAMURAI"],
     "土": ["幼児", "nikoキッズ", "SAORI", "TAKUEI", "愛梨", "MAHIRO初級", "MAHIRO中級"],
-    "WS": ["WS_2/1キッズ中級", "WS_2/15キッズ中級","WS_2/7cocona練習会","WS_2/14cocona練習会","WS_2/21Rena練習会","WS_2/27Rena練習会","WS_3/7konoka練習会","WS_3/14konoka練習会"]
+    "WS": ["WS_3/14konoka練習会","WS_3/21キッズ中級”,"WS_3/22キッズ中級"]
   };
 
   // ===== 共通関数 =====

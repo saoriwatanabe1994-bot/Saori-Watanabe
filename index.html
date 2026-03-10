@@ -1,191 +1,191 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>受付</title>
-  
-  <script src="./shared.js"></script>
+<meta charset="UTF-8">
+<title>受付</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="./shared.js"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-  <style>
-    body { font-family: sans-serif; padding: 10px; }
+<style>
+body { font-family: sans-serif; padding: 10px; }
 
-    /* 曜日ボタン（小さめ・横並び） */
-    .day-btn {
-  font-size: 24px;
-  padding: 14px 20px;
-  margin: 6px 4px;
-  opacity: 0.6;
+.day-btn{
+font-size:24px;
+padding:14px 20px;
+margin:6px 4px;
+opacity:0.6;
 }
 
-    .day-btn.today {
-      opacity: 1;
-      background: #66adff;
-      color: #fff;
-      font-weight: bold;
-    }
-
-    /* クラスボタン（大きめ・縦） */
-   .class-btn {
-  font-size: 32px;
-  padding: 60px 28px;
-  margin: 18px 0;
-  width: 100%;
-  text-align: left;
+.day-btn.today{
+opacity:1;
+background:#66adff;
+color:#fff;
+font-weight:bold;
 }
 
-
-    /* 受付完了オーバーレイ */
-    #complete {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-    #completeBox {
-  background: #fff;
-  padding: 44px 20px;    /* ← 横paddingを減らす（中身が広くなる） */
-  border-radius: 18px;
-  text-align: center;
-  width: 98%;            /* ← 画面いっぱい寄せ */
-  max-width: 560px;
-  box-sizing: border-box;
-  line-height: 1.6;
-}
-    #completeDetail {
-  font-size: 28px;
-  font-weight: 700;
-  word-break: normal;      /* ← break-word をやめる */
-  overflow-wrap: normal;   /* ← 保険 */
+.class-btn{
+font-size:32px;
+padding:60px 28px;
+margin:18px 0;
+width:100%;
+text-align:left;
 }
 
-#completeDetail b {
-  font-size: 36px;
+.remain-btn{
+font-size:28px;
+padding:26px 20px;
+margin:16px 0;
+width:100%;
+background:#ffd966;
+color:#000;
+font-weight:bold;
+border:none;
+border-radius:10px;
 }
 
-.complete-title {
-  font-size: 48px;
-  font-weight: 800;
-  display: block;
+#complete{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,0.65);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:999;
 }
 
-    .remain-btn {
-  font-size: 28px;
-  padding: 26px 20px;
-  margin: 16px 0;
-  width: 100%;
-  background: #ffd966;
-  color: #000;
-  font-weight: bold;
-  border: none;
-  border-radius: 10px;
+#completeBox{
+background:#fff;
+padding:44px 20px;
+border-radius:18px;
+text-align:center;
+width:98%;
+max-width:560px;
+box-sizing:border-box;
+line-height:1.6;
 }
 
-  </style>
+#completeDetail{
+font-size:28px;
+font-weight:700;
+}
+
+#completeDetail b{
+font-size:36px;
+}
+
+.complete-title{
+font-size:48px;
+font-weight:800;
+display:block;
+}
+</style>
 </head>
 
 <body>
-  <h2 id="title"></h2>
-  <button id="remainBtn" class="remain-btn">
+
+<h2 id="title"></h2>
+
+<button id="remainBtn" class="remain-btn">
 残回数照会
 </button>
 
-  <div id="dayButtons"></div>
-  <div id="container"></div>
+<div id="dayButtons"></div>
+<div id="container"></div>
 
-  <!-- ✅ completeは1個だけにする（重要） -->
-  <div id="complete">
-    <div id="completeBox">
-      <div id="completeDetail"></div>
-    </div>
-  </div>
+<div id="complete">
+<div id="completeBox">
+<div id="completeDetail"></div>
+</div>
+</div>
+
 <script>
-(async () => {
-  await initLiffSafe();
 
-  const params = new URLSearchParams(window.location.search);
-  const member = params.get("member");
-  setTimeout(() => {
+(async () => {
+
+await initLiffSafe();
+
+const params = new URLSearchParams(window.location.search);
+const member = params.get("member");
+
+const title = document.getElementById("title");
+const container = document.getElementById("container");
+const dayButtons = document.getElementById("dayButtons");
+
+let selectedDay = getTokyoWeekdayLabel();
+if(selectedDay==="日") selectedDay="月";
+
+let submitting=false;
 
 document.getElementById("remainBtn").onclick = async () => {
 
-  if (!member) {
-    alert("会員QRを読み取ってください");
-    return;
-  }
+if(!member){
+alert("会員QRを読み取ってください");
+return;
+}
 
-  const data = await fetchRemain(member);
-
-  showRemain(data);
+const data = await fetchRemain(member);
+showRemain(data);
 
 };
 
-}, 100);
-  const title = document.getElementById("title");
-  const container = document.getElementById("container");
-  const dayButtons = document.getElementById("dayButtons");
+function submit(className){
 
-  let selectedDay = getTokyoWeekdayLabel();
-  if (selectedDay === "日") selectedDay = "月";
+if(submitting) return;
+submitting=true;
 
-  let submitting = false;
+if(!member){
+alert("会員QRを読み取ってください（memberが取得できません）");
+submitting=false;
+return;
+}
 
-  function submit(className) {
-    if (submitting) return;
-    submitting = true;
+const url =
+APP_CONFIG.FORM_RESPONSE +
+"?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
+"&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-    if (!member) {
-      alert("会員QRを読み取ってください（memberが取得できません）");
-      submitting = false;
-      return;
-    }
+fetch(url,{method:"POST",mode:"no-cors"});
 
-    const url =
-      APP_CONFIG.FORM_RESPONSE +
-      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
-      "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
+const complete=document.getElementById("complete");
+const completeDetail=document.getElementById("completeDetail");
 
-    fetch(url, { method: "POST", mode: "no-cors" });
+completeDetail.innerHTML=
+"<span class='complete-title'>✅ 受付完了</span><br><br>"+
+"会員番号：<b>"+escapeHtml(member)+"</b><br>"+
+"クラス：<b>"+escapeHtml(className)+"</b><br><br>"+
+"<span>次の会員を読み取ってください</span>";
 
-    const complete = document.getElementById("complete");
-    const completeDetail = document.getElementById("completeDetail");
+complete.style.display="flex";
 
-    completeDetail.innerHTML =
-      "<span class='complete-title'>✅ 受付完了</span><br><br>" +
-      "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
-      "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
-      "<span class='nowrap'>次の会員を読み取ってください</span>";
+setTimeout(()=>liff.closeWindow(),1200);
 
-    complete.style.display = "flex";
+}
 
-    setTimeout(() => liff.closeWindow(), 1200);
-  }
+function renderAll(){
 
-  function renderAll() {
-    renderDayButtons({
-      dayButtonsEl: dayButtons,
-      selectedDay,
-      onSelect: (day) => {
-        selectedDay = day;
-        renderAll();
-      },
-    });
+renderDayButtons({
+dayButtonsEl:dayButtons,
+selectedDay,
+onSelect:(day)=>{
+selectedDay=day;
+renderAll();
+}
+});
 
-    renderClasses({
-      day: selectedDay,
-      titleEl: title,
-      containerEl: container,
-      onSubmit: submit,
-    });
-  }
+renderClasses({
+day:selectedDay,
+titleEl:title,
+containerEl:container,
+onSubmit:submit
+});
 
-  renderAll();
+}
+
+renderAll();
+
 })();
-</script>
 
+</script>
 </body>
 </html>

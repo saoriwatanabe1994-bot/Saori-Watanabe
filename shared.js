@@ -127,7 +127,7 @@
   window.fetchCount = async function(member){
 
     const res = await fetch(
-      "https://script.google.com/macros/s/AKfycbxjn3MSpYYdk6Je8SrZlEC0yx7qgcr0374rblaj6kdp95gW8qn19IkdAkW0dWZ7_jQ3/exec?member="
+      "https://script.google.com/macros/s/AKfycbysbzGDCiMraQG9ZzbqJYWlwtFLNhxrTe3Xl9OVf5hgBNvkmceAFiiQwhm2zJoCw1DN/exec?member="
       + encodeURIComponent(member)
     );
 

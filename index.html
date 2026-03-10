@@ -109,7 +109,9 @@
 
   const params = new URLSearchParams(window.location.search);
   const member = params.get("member");
-  document.getElementById("remainBtn").onclick = async () => {
+  setTimeout(() => {
+
+document.getElementById("remainBtn").onclick = async () => {
 
   if (!member) {
     alert("会員QRを読み取ってください");
@@ -122,6 +124,7 @@
 
 };
 
+}, 100);
   const title = document.getElementById("title");
   const container = document.getElementById("container");
   const dayButtons = document.getElementById("dayButtons");

@@ -117,7 +117,7 @@ window.showRemain = function(data){
 };
 
 // ===== 残回数取得 =====
-window.fetchRemain = async function(member){
+window.fetchCount = async function(member){
 
   const url =
   "https://script.google.com/macros/s/AKfycbxjn3MSpYYdk6Je8SrZlEC0yx7qgcr0374rblaj6kdp95gW8qn19IkdAkW0dWZ7_jQ3/exec"
@@ -129,20 +129,19 @@ window.fetchRemain = async function(member){
 }
 
 
-window.showRemain = function(data){
+window.showCount = function(data){
 
   const complete = document.getElementById("complete");
   const completeDetail = document.getElementById("completeDetail");
 
   completeDetail.innerHTML =
-    "<span class='complete-title'>残回数照会</span><br><br>" +
+    "<span class='complete-title'>受講数照会</span><br><br>" +
     "会員番号：<b>" + window.escapeHtml(data.member) + "</b><br>" +
-    "コース：<b>" + window.escapeHtml(data.course) + "</b><br>" +
-    "残回数：<b>" + window.escapeHtml(data.remain) + " 回</b>";
+    "今月受講：<b>" + window.escapeHtml(data.count) + " 回</b><br>" +
+    "最終受講：<b>" + window.escapeHtml(data.last) + "</b>";
 
   complete.style.display = "flex";
 
-  // ⭐追加
   setTimeout(()=>{
     complete.style.display="none";
   },5000);

@@ -105,9 +105,13 @@ display:block;
 
 await initLiffSafe();
 
-const params = new URLSearchParams(location.href);
-const member = params.get("member");
+const params = new URLSearchParams(window.location.search);
+let member = params.get("member");
 
+if(!member){
+  const url = new URL(location.href);
+  member = url.searchParams.get("member");
+}
 const title = document.getElementById("title");
 const container = document.getElementById("container");
 const dayButtons = document.getElementById("dayButtons");

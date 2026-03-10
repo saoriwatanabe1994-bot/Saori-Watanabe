@@ -133,6 +133,11 @@
     v = v.replace(/[^A-Z0-9-]/g, "");
     memberInput.value = v;
   });
+  memberInput.addEventListener("keypress",(e)=>{
+  if(e.key==="Enter"){
+    goBtn.click();
+  }
+});
 
   function showInputScreen() {
     sectionSelect.classList.remove("active");
@@ -169,8 +174,8 @@
     fetch(url, { method: "POST", mode: "no-cors" });
 
     completeDetail.innerHTML =
-      "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
-      "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
+      "会員番号：<b>" + window.escapeHtml(currentMember) + "</b><br>" +
+"クラス：<b>" + window.escapeHtml(className) + "</b><br><br>" +
       "次の会員を入力してください";
 
     complete.style.display = "flex";

@@ -147,3 +147,15 @@ window.showCount = function(data){
   },5000);
 
 };
+window.showLoading = function(){
+
+  const complete = document.getElementById("complete");
+  const completeDetail = document.getElementById("completeDetail");
+
+  completeDetail.innerHTML =
+    "<span class='complete-title'>受講数照会</span><br><br>" +
+    "照会中…";
+
+  complete.style.display = "flex";
+
+};

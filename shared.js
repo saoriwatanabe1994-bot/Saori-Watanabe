@@ -115,3 +115,31 @@ window.showRemain = function(data){
   complete.style.display = "flex";
 
 };
+
+// ===== 残回数取得 =====
+window.fetchRemain = async function(member){
+
+  const url =
+  "https://script.google.com/macros/s/AKfycbxjn3MSpYYdk6Je8SrZlEC0yx7qgcr0374rblaj6kdp95gW8qn19IkdAkW0dWZ7_jQ3/exec"
+  + "?member=" + encodeURIComponent(member);
+
+  const res = await fetch(url);
+  return await res.json();
+
+}
+
+
+// ===== 残回数表示 =====
+window.showRemain = function(data){
+
+  const complete = document.getElementById("complete");
+  const detail = document.getElementById("completeDetail");
+
+  detail.innerHTML =
+  "<span class='complete-title'>残回数</span><br><br>" +
+  "コース：<b>"+escapeHtml(data.コース)+"</b><br>" +
+  "残り：<b>"+escapeHtml(data.残り)+"回</b>";
+
+  complete.style.display="flex";
+
+}

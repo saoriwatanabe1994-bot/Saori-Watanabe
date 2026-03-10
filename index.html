@@ -73,11 +73,26 @@
   display: block;
 }
 
+    .remain-btn {
+  font-size: 28px;
+  padding: 26px 20px;
+  margin: 16px 0;
+  width: 100%;
+  background: #ffd966;
+  color: #000;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+}
+
   </style>
 </head>
 
 <body>
   <h2 id="title"></h2>
+  <button id="remainBtn" class="remain-btn">
+残回数照会
+</button>
 
   <div id="dayButtons"></div>
   <div id="container"></div>
@@ -94,6 +109,18 @@
 
   const params = new URLSearchParams(window.location.search);
   const member = params.get("member");
+  document.getElementById("remainBtn").onclick = async () => {
+
+  if (!member) {
+    alert("会員QRを読み取ってください");
+    return;
+  }
+
+  const data = await fetchRemain(member);
+
+  showRemain(data);
+
+};
 
   const title = document.getElementById("title");
   const container = document.getElementById("container");

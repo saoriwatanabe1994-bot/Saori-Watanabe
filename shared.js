@@ -142,4 +142,9 @@ window.showRemain = function(data){
 
   complete.style.display = "flex";
 
+  // ⭐追加
+  setTimeout(()=>{
+    complete.style.display="none";
+  },5000);
+
 };

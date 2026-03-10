@@ -89,3 +89,29 @@
     }
   };
 })();
+
+window.fetchRemain = async function(member){
+
+  const res = await fetch(
+    "https://script.google.com/macros/s/AKfycbxjn3MSpYYdk6Je8SrZlEC0yx7qgcr0374rblaj6kdp95gW8qn19IkdAkW0dWZ7_jQ3/exec?member=" 
+    + encodeURIComponent(member)
+  );
+
+  return await res.json();
+
+};
+
+window.showRemain = function(data){
+
+  const complete = document.getElementById("complete");
+  const completeDetail = document.getElementById("completeDetail");
+
+  completeDetail.innerHTML =
+    "<span class='complete-title'>残回数照会</span><br><br>" +
+    "会員番号：<b>" + escapeHtml(data.member) + "</b><br>" +
+    "コース：<b>" + escapeHtml(data.course) + "</b><br>" +
+    "残回数：<b>" + escapeHtml(data.remain) + " 回</b>";
+
+  complete.style.display = "flex";
+
+};

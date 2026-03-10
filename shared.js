@@ -10,24 +10,24 @@
   };
 
   // ===== 共通データ =====
-  window.DAY_MAP = ["月", "火", "水", "木", "金", "土", "WS"];
+  window.DAY_MAP = ["月","火","水","木","金","土","WS"];
 
   window.CLASSES_BY_DAY = {
-    "月": ["UCCHY初級","UCCHY中級","SHINYA","あすぴ","K×G中村キッズ","K×G中村オープン","K×G長久手"],
-    "火": ["SHO-TA","KIBE初級","KIBE中級","MIZUKI","K×G茶屋ヶ坂"],
-    "水": ["NC_スターター","AIRI初級","AIRI中級","ruchica","K×G高針キッズ","K×G高針オープン"],
-    "木": ["SERINAキッズ","SERINA初中級","Shogo","RIN","心","K×G瀬戸"],
-    "金": ["manaキッズ","mana初級","KANAMI","RYUYA","SAMURAI"],
-    "土": ["幼児","nikoキッズ","SAORI","TAKUEI","愛梨","MAHIRO初級","MAHIRO中級"],
-    "WS": ["WS_3/14konoka練習会","WS_3/21キッズ中級","WS_3/22キッズ中級"]
+    "月":["UCCHY初級","UCCHY中級","SHINYA","あすぴ","K×G中村キッズ","K×G中村オープン","K×G長久手"],
+    "火":["SHO-TA","KIBE初級","KIBE中級","MIZUKI","K×G茶屋ヶ坂"],
+    "水":["NC_スターター","AIRI初級","AIRI中級","ruchica","K×G高針キッズ","K×G高針オープン"],
+    "木":["SERINAキッズ","SERINA初中級","Shogo","RIN","心","K×G瀬戸"],
+    "金":["manaキッズ","mana初級","KANAMI","RYUYA","SAMURAI"],
+    "土":["幼児","nikoキッズ","SAORI","TAKUEI","愛梨","MAHIRO初級","MAHIRO中級"],
+    "WS":["WS_3/14konoka練習会","WS_3/21キッズ中級","WS_3/22キッズ中級"]
   };
 
   // ===== 今日の曜日 =====
-  window.getTokyoWeekdayLabel = function () {
+  window.getTokyoWeekdayLabel = function(){
 
-    const wd = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Asia/Tokyo",
-      weekday: "short",
+    const wd = new Intl.DateTimeFormat("en-US",{
+      timeZone:"Asia/Tokyo",
+      weekday:"short",
     }).format(new Date());
 
     const map = {
@@ -45,17 +45,15 @@
 
   // ===== HTMLエスケープ =====
   window.escapeHtml = function(str){
-
     return String(str)
       .replaceAll("&","&amp;")
       .replaceAll("<","&lt;")
       .replaceAll(">","&gt;")
       .replaceAll('"',"&quot;")
       .replaceAll("'","&#039;");
-
   };
 
-  // ===== 曜日ボタン描画 =====
+  // ===== 曜日ボタン =====
   window.renderDayButtons = function({
     dayButtonsEl,
     selectedDay,
@@ -69,8 +67,8 @@
       const btn=document.createElement("button");
 
       btn.type="button";
-      btn.textContent = day==="WS" ? "WS" : `${day}曜`;
-      btn.className = "day-btn" + (day===selectedDay ? " today" : "");
+      btn.textContent=day==="WS"?"WS":`${day}曜`;
+      btn.className="day-btn"+(day===selectedDay?" today":"");
 
       btn.onclick=()=>onSelect(day);
 
@@ -80,7 +78,7 @@
 
   };
 
-  // ===== クラスボタン描画 =====
+  // ===== クラス描画 =====
   window.renderClasses = function({
     day,
     titleEl,
@@ -117,9 +115,7 @@
   window.initLiffSafe = async function(){
 
     try{
-      await liff.init({
-        liffId:window.APP_CONFIG.LIFF_ID
-      });
+      await liff.init({liffId:window.APP_CONFIG.LIFF_ID});
     }
     catch(e){
       // LINE外でも止めない
@@ -127,53 +123,50 @@
 
   };
 
+  // ===== 受講数取得 =====
+  window.fetchCount = async function(member){
+
+    const res = await fetch(
+      "https://script.google.com/macros/s/AKfycbxjn3MSpYYdk6Je8SrZlEC0yx7qgcr0374rblaj6kdp95gW8qn19IkdAkW0dWZ7_jQ3/exec?member="
+      + encodeURIComponent(member)
+    );
+
+    return await res.json();
+
+  };
+
+  // ===== 照会中 =====
+  window.showLoading = function(){
+
+    const complete=document.getElementById("complete");
+    const completeDetail=document.getElementById("completeDetail");
+
+    completeDetail.innerHTML=
+      "<span class='complete-title'>受講数照会</span><br><br>"+
+      "照会中…";
+
+    complete.style.display="flex";
+
+  };
+
+  // ===== 受講数表示 =====
+  window.showCount = function(data){
+
+    const complete=document.getElementById("complete");
+    const completeDetail=document.getElementById("completeDetail");
+
+    completeDetail.innerHTML=
+      "<span class='complete-title'>受講数照会</span><br><br>"+
+      "会員番号：<b>"+window.escapeHtml(data.member)+"</b><br>"+
+      "今月受講：<b>"+window.escapeHtml(data.count)+" 回</b><br>"+
+      "最終受講：<b>"+window.escapeHtml(data.last)+"</b>";
+
+    complete.style.display="flex";
+
+    setTimeout(()=>{
+      complete.style.display="none";
+    },5000);
+
+  };
+
 })();
-
-
-// ===== 受講数取得API =====
-window.fetchCount = async function(member){
-
-  const res = await fetch(
-    "https://script.google.com/macros/s/AKfycbxjn3MSpYYdk6Je8SrZlEC0yx7qgcr0374rblaj6kdp95gW8qn19IkdAkW0dWZ7_jQ3/exec?member="
-    + encodeURIComponent(member)
-  );
-
-  return await res.json();
-
-};
-
-
-// ===== 照会中表示 =====
-window.showLoading = function(){
-
-  const complete = document.getElementById("complete");
-  const completeDetail = document.getElementById("completeDetail");
-
-  completeDetail.innerHTML =
-    "<span class='complete-title'>受講数照会</span><br><br>" +
-    "照会中…";
-
-  complete.style.display="flex";
-
-};
-
-
-// ===== 受講数表示 =====
-window.showCount = function(data){
-
-  const complete = document.getElementById("complete");
-  const completeDetail = document.getElementById("completeDetail");
-
-  completeDetail.innerHTML =
-    "<span class='complete-title'>受講数照会</span><br><br>" +
-    "会員番号：<b>"+window.escapeHtml(data.member)+"</b><br>" +
-    "今月受講：<b>"+window.escapeHtml(data.count)+" 回</b><br>" +
-    "最終受講：<b>"+window.escapeHtml(data.last)+"</b>";
-
-  complete.style.display="flex";
-
-  setTimeout(()=>{
-    complete.style.display="none";
-  },5000);
-
-};

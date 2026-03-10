@@ -129,17 +129,17 @@ window.fetchRemain = async function(member){
 }
 
 
-// ===== 残回数表示 =====
 window.showRemain = function(data){
 
   const complete = document.getElementById("complete");
-  const detail = document.getElementById("completeDetail");
+  const completeDetail = document.getElementById("completeDetail");
 
-  detail.innerHTML =
-  "<span class='complete-title'>残回数</span><br><br>" +
-  "コース：<b>"+escapeHtml(data.コース)+"</b><br>" +
-  "残り：<b>"+escapeHtml(data.残り)+"回</b>";
+  completeDetail.innerHTML =
+    "<span class='complete-title'>残回数照会</span><br><br>" +
+    "会員番号：<b>" + window.escapeHtml(data.member) + "</b><br>" +
+    "コース：<b>" + window.escapeHtml(data.course) + "</b><br>" +
+    "残回数：<b>" + window.escapeHtml(data.remain) + " 回</b>";
 
-  complete.style.display="flex";
+  complete.style.display = "flex";
 
-}
+};

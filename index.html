@@ -105,12 +105,23 @@ display:block;
 
 await initLiffSafe();
 
-const params = new URLSearchParams(window.location.search);
-let member = params.get("member");
+let member = null;
 
+const params = new URLSearchParams(window.location.search);
+member = params.get("member");
+
+// LIFFでURLが消えた場合
 if(!member){
   const url = new URL(location.href);
   member = url.searchParams.get("member");
+}
+
+// それでも無ければcontextから取得
+if(!member && liff.isInClient()){
+  const ctx = liff.getContext();
+  if(ctx && ctx.queryParams){
+    member = ctx.queryParams.member;
+  }
 }
 const title = document.getElementById("title");
 const container = document.getElementById("container");

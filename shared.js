@@ -123,14 +123,16 @@
 
   };
 
-  // ===== 受講数取得 =====
+// ===== 受講数取得 =====
 window.fetchCount = async function(member){
 
   const ym = new Date().toISOString().slice(0,7);
   const key = member + "_" + ym;
 
   const url =
-  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&sheet=照会用";
+  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
+  encodeURIComponent("select C,D where E='" + key + "'") +
+  "&sheet=照会用";
 
   const res = await fetch(url);
   const text = await res.text();
@@ -139,17 +141,13 @@ window.fetchCount = async function(member){
 
   const rows = json.table.rows;
 
-  for(const r of rows){
+  if(rows.length > 0){
 
-    if(r.c[4] && r.c[4].v === key){
-
-      return {
-        member: member,
-        count: r.c[2].v,
-        last: r.c[3].v
-      };
-
-    }
+    return {
+      member: member,
+      count: rows[0].c[0]?.v || 0,
+      last: rows[0].c[1]?.v || ""
+    };
 
   }
 

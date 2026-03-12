@@ -127,7 +127,7 @@
   window.fetchCount = async function(member){
 
     const res = await fetch(
-      "https://script.google.com/macros/s/AKfycbysbzGDCiMraQG9ZzbqJYWlwtFLNhxrTe3Xl9OVf5hgBNvkmceAFiiQwhm2zJoCw1DN/exec?member="
+      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&sheet=照会用"
       + encodeURIComponent(member)
     );
 

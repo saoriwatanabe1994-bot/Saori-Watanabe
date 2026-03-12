@@ -124,17 +124,38 @@
   };
 
   // ===== 受講数取得 =====
-  window.fetchCount = async function(member){
+window.fetchCount = async function(member){
 
-    const res = await fetch(
-      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&sheet=照会用"
-      + encodeURIComponent(member)
-    );
+  const ym = new Date().toISOString().slice(0,7);
+  const key = member + "_" + ym;
 
-    return await res.json();
+  const url =
+  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&sheet=照会用";
 
-  };
+  const res = await fetch(url);
+  const text = await res.text();
 
+  const json = JSON.parse(text.substring(47).slice(0,-2));
+
+  const rows = json.table.rows;
+
+  for(const r of rows){
+
+    if(r.c[4] && r.c[4].v === key){
+
+      return {
+        member: member,
+        count: r.c[2].v,
+        last: r.c[3].v
+      };
+
+    }
+
+  }
+
+  return {member:member,count:0,last:""};
+
+};
   // ===== 照会中 =====
   window.showLoading = function(){
 

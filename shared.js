@@ -143,10 +143,23 @@ window.fetchCount = async function(member){
 
   if(rows.length > 0){
 
+    const count = rows[0].c[0]?.v || 0;
+
+    const dateRaw = rows[0].c[1]?.v;
+
+    let last = "";
+
+    if(dateRaw){
+
+      const d = new Date(dateRaw);
+      last = (d.getMonth()+1) + "/" + d.getDate();
+
+    }
+
     return {
       member: member,
-      count: rows[0].c[0]?.v || 0,
-      last: rows[0].c[1]?.v || ""
+      count: count,
+      last: last
     };
 
   }

@@ -134,35 +134,44 @@ window.fetchCount = async function(member){
   encodeURIComponent("select C,D where E='" + key + "'") +
   "&sheet=照会用";
 
-  const res = await fetch(url);
-  const text = await res.text();
+  try{
 
-  const json = JSON.parse(text.substring(47).slice(0,-2));
+    const res = await fetch(url);
+    const text = await res.text();
 
-  const rows = json.table.rows;
+    const json = JSON.parse(
+      text.replace("/*O_o*/","")
+          .replace("google.visualization.Query.setResponse(","")
+          .slice(0,-2)
+    );
 
-  if(rows.length > 0){
+    const rows = json.table.rows;
 
-    const count = rows[0].c[0]?.v || 0;
+    if(rows.length > 0){
 
-    let last = "";
+      const count = rows[0].c[0]?.v || 0;
 
-    if(rows[0].c[1]?.f){
+      let last = "";
 
-      const f = rows[0].c[1].f;
+      if(rows[0].c[1]?.f){
 
-      const parts = f.split(" ")[0].split("/");
+        const f = rows[0].c[1].f;
+        const parts = f.split(" ")[0].split("/");
 
-      last = Number(parts[1]) + "/" + Number(parts[2]);
+        last = Number(parts[1]) + "/" + Number(parts[2]);
+
+      }
+
+      return {
+        member: member,
+        count: count,
+        last: last
+      };
 
     }
 
-    return {
-      member: member,
-      count: count,
-      last: last
-    };
-
+  }catch(e){
+    console.log(e);
   }
 
   return {

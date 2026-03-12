@@ -141,29 +141,37 @@ window.fetchCount = async function(member){
 
   const rows = json.table.rows;
 
- if(rows.length > 0){
+  if(rows.length > 0){
 
-  const count = rows[0].c[0]?.v || 0;
+    const count = rows[0].c[0]?.v || 0;
 
-  let last = "";
+    let last = "";
 
-  if(rows[0].c[1]?.f){
+    if(rows[0].c[1]?.f){
 
-    const f = rows[0].c[1].f; // "2026/02/23 16:54:19"
+      const f = rows[0].c[1].f;
 
-    const parts = f.split(" ")[0].split("/");
+      const parts = f.split(" ")[0].split("/");
 
-    last = Number(parts[1]) + "/" + Number(parts[2]);
+      last = Number(parts[1]) + "/" + Number(parts[2]);
+
+    }
+
+    return {
+      member: member,
+      count: count,
+      last: last
+    };
 
   }
 
   return {
     member: member,
-    count: count,
-    last: last
+    count: 0,
+    last: ""
   };
 
-}
+};
   // ===== 照会中 =====
   window.showLoading = function(){
 

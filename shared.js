@@ -145,16 +145,15 @@ window.fetchCount = async function(member){
 
   const count = rows[0].c[0]?.v || 0;
 
-  const dateRaw = rows[0].c[1]?.v;
-
   let last = "";
 
-  if(dateRaw){
+  if(rows[0].c[1]?.f){
 
-    const m = dateRaw.getMonth() + 1;
-    const d = dateRaw.getDate();
+    const f = rows[0].c[1].f; // "2026/02/23 16:54:19"
 
-    last = m + "/" + d;
+    const parts = f.split(" ")[0].split("/");
+
+    last = Number(parts[1]) + "/" + Number(parts[2]);
 
   }
 

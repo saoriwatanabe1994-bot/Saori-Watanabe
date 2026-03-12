@@ -141,32 +141,30 @@ window.fetchCount = async function(member){
 
   const rows = json.table.rows;
 
-  if(rows.length > 0){
+ if(rows.length > 0){
 
-    const count = rows[0].c[0]?.v || 0;
+  const count = rows[0].c[0]?.v || 0;
 
-    const dateRaw = rows[0].c[1]?.v;
+  const dateRaw = rows[0].c[1]?.v;
 
-    let last = "";
+  let last = "";
 
-    if(dateRaw){
+  if(dateRaw){
 
-      const d = new Date(dateRaw);
-      last = (d.getMonth()+1) + "/" + d.getDate();
+    const m = dateRaw.getMonth() + 1;
+    const d = dateRaw.getDate();
 
-    }
-
-    return {
-      member: member,
-      count: count,
-      last: last
-    };
+    last = m + "/" + d;
 
   }
 
-  return {member:member,count:0,last:""};
+  return {
+    member: member,
+    count: count,
+    last: last
+  };
 
-};
+}
   // ===== 照会中 =====
   window.showLoading = function(){
 

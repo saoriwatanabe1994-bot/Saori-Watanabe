@@ -97,7 +97,8 @@
 
         if(isDup){
           const ok = confirm(
-            "⚠️ すでに受付済みです\n\n" +
+            "⚠️ 同じクラスが本日すでに受付されています\n\n" +
+            "重複受付の可能性があります\n\n" +
             "続行しますか？"
           );
           if(!ok) return;
@@ -114,7 +115,9 @@
   window.initLiffSafe = async function(){
     try{
       await liff.init({liffId:window.APP_CONFIG.LIFF_ID});
-    }catch(e){}
+    }catch(e){
+      console.log("LIFF init error:", e);
+    }
   };
 
   // ===== 受講数取得 =====
@@ -161,36 +164,7 @@
     return { member, count:0, last:"" };
   };
 
-  // ===== ローディング表示 =====
-  window.showLoading = function(){
-    const complete=document.getElementById("complete");
-    const completeDetail=document.getElementById("completeDetail");
-
-    completeDetail.innerHTML =
-      "<span class='complete-title'>受講数照会</span><br><br>照会中…";
-
-    complete.style.display="flex";
-  };
-
-  // ===== 受講数表示 =====
-  window.showCount = function(data){
-    const complete=document.getElementById("complete");
-    const completeDetail=document.getElementById("completeDetail");
-
-    completeDetail.innerHTML =
-      "<span class='complete-title'>受講数照会</span><br><br>" +
-      "会員番号：<b>"+window.escapeHtml(data.member)+"</b><br>" +
-      "今月受講：<b>"+window.escapeHtml(data.count)+" 回</b><br>" +
-      "最終受講：<b>"+window.escapeHtml(data.last)+"</b>";
-
-    complete.style.display="flex";
-
-    setTimeout(()=>{
-      complete.style.display="none";
-    },5000);
-  };
-
-  // ===== 二重受付チェック（最終版）=====
+  // ===== 二重受付チェック（最終安定版）=====
   window.checkDuplicate = async function(member, className){
 
     const now = new Date();
@@ -199,10 +173,6 @@
       now.getFullYear() + "-" +
       String(now.getMonth()+1).padStart(2,"0") + "-" +
       String(now.getDate()).padStart(2,"0");
-    console.log("=== 入力値 ===");
-console.log("member:", member);
-console.log("className:", className);
-console.log("today:", today);
 
     const url =
       "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
@@ -223,31 +193,24 @@ console.log("today:", today);
       );
 
       const rows = json.table.rows || [];
-      console.log("=== 取得データ ===");
-console.log(rows);
 
       for(const r of rows){
-        const m = (r.c[0]?.v || "").toString().trim();
-const cls = (r.c[1]?.v || "").toString().trim();
-const rawDate = r.c[2]?.v;
-
-let date = "";
-
-if(typeof rawDate === "string"){
-  date = rawDate;
-}else if(rawDate){
-  const d = new Date(rawDate);
-  date =
-    d.getFullYear() + "-" +
-    String(d.getMonth()+1).padStart(2,"0") + "-" +
-    String(d.getDate()).padStart(2,"0");
-}
-
-console.log("比較:", m, cls, date);
 
         const m = (r.c[0]?.v || "").toString().trim();
         const cls = (r.c[1]?.v || "").toString().trim();
-        const date = (r.c[2]?.v || "").toString().trim();
+        const rawDate = r.c[2]?.v;
+
+        let date = "";
+
+        if(typeof rawDate === "string"){
+          date = rawDate;
+        }else if(rawDate){
+          const d = new Date(rawDate);
+          date =
+            d.getFullYear() + "-" +
+            String(d.getMonth()+1).padStart(2,"0") + "-" +
+            String(d.getDate()).padStart(2,"0");
+        }
 
         if(
           m === member &&

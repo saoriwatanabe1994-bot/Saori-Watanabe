@@ -163,28 +163,32 @@
     return { member, count:0, last:"" };
   };
 
-  // ===== 二重受付チェック（最終安定版）=====
-  window.checkDuplicate = async function(member, className){
+  // ===== 二重受付チェック（完全版）=====
+window.checkDuplicate = async function(member, className){
 
+  // 会員番号を安全に整形（数字のみ）
+  const cleanMember = String(member).replace(/[^\d]/g, "");
+
+  // 今日の日付（YYYY-MM-DD）
   const now = new Date();
-
   const today =
     now.getFullYear() + "-" +
     String(now.getMonth()+1).padStart(2,"0") + "-" +
     String(now.getDate()).padStart(2,"0");
 
   const url =
-  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-  "&sheet=受講ログ" +
-  "&tq=" +
-  encodeURIComponent(
-    "select B,C,D" + member
-  );
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
+    "&gid=0" +  // ←シートのgidに合わせて変更してOK
+    "&tq=" +
+    encodeURIComponent(
+      "select B,C,D where B='" + cleanMember + "'"
+    );
 
   try{
     const res = await fetch(url);
     const text = await res.text();
 
+    // デバッグ（必要なら残してOK）
     console.log("RAW:", text);
 
     const json = JSON.parse(
@@ -193,36 +197,47 @@
           .slice(0,-2)
     );
 
+    // ★ここで落ちるのを防ぐ
+    if(!json.table){
+      console.log("tableなし:", json);
+      return false;
+    }
+
     const rows = json.table.rows || [];
+
     console.log("rows:", rows);
 
     for(const r of rows){
 
-  const m = String(r.c[0]?.v || "").trim();
-  const cls = String(r.c[1]?.v || "").trim();
+      const m = String(r.c[0]?.v || "").trim();
+      const cls = String(r.c[1]?.v || "").trim();
 
-  const rawDate = r.c[2]?.v;
+      // 日付を安全に変換
+      const rawDate = r.c[2]?.v;
+      let date = "";
 
-  let date = "";
+      if(rawDate instanceof Date){
+        date =
+          rawDate.getFullYear() + "-" +
+          String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
+          String(rawDate.getDate()).padStart(2,"0");
+      }else{
+        date = String(rawDate || "").trim();
+      }
 
-  if(rawDate instanceof Date){
-    date =
-      rawDate.getFullYear() + "-" +
-      String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
-      String(rawDate.getDate()).padStart(2,"0");
-  }else{
-    date = String(rawDate || "").trim();
-  }
+      console.log("比較:", m, cls, date, " / ", cleanMember, className, today);
 
-  if(
-    m === String(member).trim() &&
-    cls === String(className).trim() &&
-    date === today
-  ){
-    return true;
-  }
-}
+      if(
+        m === cleanMember &&
+        cls === className &&
+        date === today
+      ){
+        console.log("→ 重複あり");
+        return true;
+      }
+    }
 
+    console.log("→ 重複なし");
     return false;
 
   }catch(e){

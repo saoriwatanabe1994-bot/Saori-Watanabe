@@ -192,6 +192,7 @@
     );
 
     const rows = json.table.rows || [];
+    console.log("rows:", rows);
 
     for(const r of rows){
 

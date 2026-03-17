@@ -287,14 +287,14 @@ window.checkDuplicate = async function(member, className){
     String(now.getMonth()+1).padStart(2,"0") + "-" +
     String(now.getDate()).padStart(2,"0");
 
- const url =
+  const url =
   "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
   "&sheet=受講ログ" +
   "&tq=" +
   encodeURIComponent(
     "select A where B='" + member +
     "' and C='" + className +
-    "' and TEXT(D,'yyyy-mm-dd')='" + today + "'"
+    "' and D='" + today + "'"
   );
 
   try{

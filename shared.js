@@ -185,6 +185,8 @@
     const res = await fetch(url);
     const text = await res.text();
 
+    console.log("RAW:", text);
+
     const json = JSON.parse(
       text.replace("/*O_o*/","")
           .replace("google.visualization.Query.setResponse(","")

@@ -97,8 +97,7 @@
 
         if(isDup){
           const ok = confirm(
-            "⚠️ 同じクラスが本日すでに受付されています\n\n" +
-            "重複受付の可能性があります\n\n" +
+            "⚠️ すでに受付済みです\n\n" +
             "続行しますか？"
           );
           if(!ok) return;
@@ -175,12 +174,12 @@
     String(now.getDate()).padStart(2,"0");
 
   const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-    "&sheet=受講ログ" +
-    "&tq=" +
-    encodeURIComponent(
-      "select B,C,D where B='" + member + "'"
-    );
+  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
+  "&sheet=受講ログ" +
+  "&tq=" +
+  encodeURIComponent(
+    "select B,C,D where B=" + member
+  );
 
   try{
     const res = await fetch(url);

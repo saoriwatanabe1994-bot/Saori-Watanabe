@@ -178,7 +178,7 @@
   "&sheet=受講ログ" +
   "&tq=" +
   encodeURIComponent(
-    "select B,C,D where B=" + member
+    "select B,C,D" + member
   );
 
   try{

@@ -199,6 +199,10 @@
       now.getFullYear() + "-" +
       String(now.getMonth()+1).padStart(2,"0") + "-" +
       String(now.getDate()).padStart(2,"0");
+    console.log("=== 入力値 ===");
+console.log("member:", member);
+console.log("className:", className);
+console.log("today:", today);
 
     const url =
       "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
@@ -219,8 +223,27 @@
       );
 
       const rows = json.table.rows || [];
+      console.log("=== 取得データ ===");
+console.log(rows);
 
       for(const r of rows){
+        const m = (r.c[0]?.v || "").toString().trim();
+const cls = (r.c[1]?.v || "").toString().trim();
+const rawDate = r.c[2]?.v;
+
+let date = "";
+
+if(typeof rawDate === "string"){
+  date = rawDate;
+}else if(rawDate){
+  const d = new Date(rawDate);
+  date =
+    d.getFullYear() + "-" +
+    String(d.getMonth()+1).padStart(2,"0") + "-" +
+    String(d.getDate()).padStart(2,"0");
+}
+
+console.log("比較:", m, cls, date);
 
         const m = (r.c[0]?.v || "").toString().trim();
         const cls = (r.c[1]?.v || "").toString().trim();

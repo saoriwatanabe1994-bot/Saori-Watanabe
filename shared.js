@@ -166,10 +166,8 @@
   // ===== 二重受付チェック（完全版）=====
 window.checkDuplicate = async function(member, className){
 
-  // 会員番号を安全に整形（数字のみ）
   const cleanMember = String(member).replace(/[^\d]/g, "");
 
-  // 今日の日付（YYYY-MM-DD）
   const now = new Date();
   const today =
     now.getFullYear() + "-" +
@@ -178,17 +176,12 @@ window.checkDuplicate = async function(member, className){
 
   const url =
     "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-    "&gid=0" +  // ←シートのgidに合わせて変更してOK
-    "&tq=" +
-    encodeURIComponent(
-      "select B,C,D where B='" + cleanMember + "'"
-    );
+    "&gid=0"; // ←シートID
 
   try{
     const res = await fetch(url);
     const text = await res.text();
 
-    // デバッグ（必要なら残してOK）
     console.log("RAW:", text);
 
     const json = JSON.parse(
@@ -197,9 +190,8 @@ window.checkDuplicate = async function(member, className){
           .slice(0,-2)
     );
 
-    // ★ここで落ちるのを防ぐ
     if(!json.table){
-      console.log("tableなし:", json);
+      console.log("tableなし", json);
       return false;
     }
 
@@ -209,11 +201,10 @@ window.checkDuplicate = async function(member, className){
 
     for(const r of rows){
 
-      const m = String(r.c[0]?.v || "").trim();
-      const cls = String(r.c[1]?.v || "").trim();
+      const m = String(r.c[1]?.v || "").trim(); // B列
+      const cls = String(r.c[2]?.v || "").trim(); // C列
 
-      // 日付を安全に変換
-      const rawDate = r.c[2]?.v;
+      const rawDate = r.c[3]?.v; // D列
       let date = "";
 
       if(rawDate instanceof Date){
@@ -225,7 +216,7 @@ window.checkDuplicate = async function(member, className){
         date = String(rawDate || "").trim();
       }
 
-      console.log("比較:", m, cls, date, " / ", cleanMember, className, today);
+      console.log("比較:", m, cls, date);
 
       if(
         m === cleanMember &&

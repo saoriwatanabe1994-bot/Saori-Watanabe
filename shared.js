@@ -103,7 +103,25 @@
       btn.textContent=`受付 ▶ ${cls}`;
       btn.className="class-btn";
 
-      btn.onclick=()=>onSubmit(cls);
+      btn.onclick = async () => {
+
+  // memberは既に取得してる前提
+  const member = window.currentMember;
+
+  const isDup = await window.checkDuplicate(member, cls);
+
+  if(isDup){
+    const ok = confirm(
+      "⚠️ このクラスは本日すでに受付されています\n\n" +
+      "重複受付の可能性があります\n\n" +
+      "続行しますか？"
+    );
+    if(!ok) return;
+  }
+
+  onSubmit(cls);
+
+};
 
       containerEl.appendChild(btn);
 
@@ -214,5 +232,50 @@ window.fetchCount = async function(member){
     },5000);
 
   };
+
+  // ===== 二重受付チェック =====
+window.checkDuplicate = async function(member, selectedClass){
+
+  const url =
+  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
+  encodeURIComponent("select A,D,F where D='" + member + "'") +
+  "&sheet=受講ログ";
+
+  try{
+
+    const res = await fetch(url);
+    const text = await res.text();
+
+    const json = JSON.parse(
+      text.replace("/*O_o*/","")
+          .replace("google.visualization.Query.setResponse(","")
+          .slice(0,-2)
+    );
+
+    const rows = json.table.rows || [];
+
+    // 今日（日付）作成
+    const now = new Date();
+    const today = (now.getMonth()+1) + "/" + now.getDate();
+
+    return rows.some(r => {
+
+      const dateF = r.c[0]?.f || ""; // A列（日付 formatted）
+      const cls   = r.c[2]?.v || ""; // F列（クラス）
+
+      if(!dateF) return false;
+
+      const d = dateF.split(" ")[0]; // M/D取得
+
+      return d === today && cls === selectedClass;
+
+    });
+
+  }catch(e){
+    console.log(e);
+    return false;
+  }
+
+};
 
 })();

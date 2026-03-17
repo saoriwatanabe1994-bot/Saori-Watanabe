@@ -209,6 +209,7 @@ memberInput.addEventListener("keydown", (e) => {
     const v = memberInput.value.trim();
     if (!v) return alert("会員番号を入力してください");
     currentMember = v;
+    window.currentMember = currentMember;
     showSelectScreen();
   };
 

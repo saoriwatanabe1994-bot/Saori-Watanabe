@@ -167,8 +167,23 @@ alert("照会エラー");
 
 function submit(className){
 
+async function submit(className){
+
 if(submitting) return;
 submitting=true;
+
+const member = window.currentMember;
+
+// ★ 二重チェック
+const isDup = await checkDuplicate(member, className);
+
+if(isDup){
+  submitting=false;
+
+  if(!confirm("⚠️ すでに受付済みです\nそれでも登録しますか？")){
+    return;
+  }
+}
 
 if(!member){
 alert("会員QRを読み取ってください（memberが取得できません）");

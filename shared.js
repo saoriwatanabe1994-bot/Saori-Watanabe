@@ -212,13 +212,13 @@
             String(d.getDate()).padStart(2,"0");
         }
 
-        if(
-          m === member &&
-          cls === className &&
-          date === today
-        ){
-          return true;
-        }
+       if(
+  String(m).trim() === String(member).trim() &&
+  String(cls).trim() === String(className).trim() &&
+  date === today
+){
+  return true;
+}
       }
 
       return false;

@@ -198,7 +198,19 @@
 
   const m = String(r.c[0]?.v || "").trim();
   const cls = String(r.c[1]?.v || "").trim();
-  const date = String(r.c[2]?.v || "").trim(); // ←ここ直した
+
+  const rawDate = r.c[2]?.v;
+
+  let date = "";
+
+  if(rawDate instanceof Date){
+    date =
+      rawDate.getFullYear() + "-" +
+      String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
+      String(rawDate.getDate()).padStart(2,"0");
+  }else{
+    date = String(rawDate || "").trim();
+  }
 
   if(
     m === String(member).trim() &&
@@ -206,8 +218,8 @@
     date === today
   ){
     return true;
-      }
-    }
+  }
+}
 
     return false;
 

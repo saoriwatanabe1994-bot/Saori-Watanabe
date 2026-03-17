@@ -196,28 +196,21 @@
 
       for(const r of rows){
 
-        const m = (r.c[0]?.v || "").toString().trim();
-        const cls = (r.c[1]?.v || "").toString().trim();
-        const rawDate = r.c[2]?.v;
+  const m = String(r.c[0]?.v || "").trim();
+  const cls = String(r.c[1]?.v || "").trim();
 
-        let date = "";
+  // ★ここが最重要修正
+  const date = String(r.c[2]?.f || "").trim();
 
-        if(typeof rawDate === "string"){
-          date = rawDate;
-        }else if(rawDate){
-          const d = new Date(rawDate);
-          date =
-            d.getFullYear() + "-" +
-            String(d.getMonth()+1).padStart(2,"0") + "-" +
-            String(d.getDate()).padStart(2,"0");
-        }
+  console.log("比較:", m, cls, date);
 
-       if(
-  String(m).trim() === String(member).trim() &&
-  String(cls).trim() === String(className).trim() &&
-  date === today
-){
-  return true;
+  if(
+    m === String(member).trim() &&
+    cls === String(className).trim() &&
+    date === today
+  ){
+    return true;
+  }
 }
       }
 

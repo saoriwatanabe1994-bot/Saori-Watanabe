@@ -280,7 +280,12 @@ window.checkDuplicate = async function(member, selectedClass){
  // ===== 二重受付チェック =====
 window.checkDuplicate = async function(member, className){
 
-  const today = new Date().toISOString().slice(0,10);
+  const now = new Date();
+
+  const today =
+    now.getFullYear() + "-" +
+    String(now.getMonth()+1).padStart(2,"0") + "-" +
+    String(now.getDate()).padStart(2,"0");
 
   const url =
   "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
@@ -302,7 +307,7 @@ window.checkDuplicate = async function(member, className){
 
     const rows = json.table.rows;
 
-    return rows.length > 0; // true = 重複あり
+    return rows.length > 0;
 
   }catch(e){
     console.log("duplicate check error", e);

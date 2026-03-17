@@ -176,13 +176,11 @@ window.checkDuplicate = async function(member, className){
 
   const url =
     "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-    "&gid=0"; // ←シートID
+    "&gid=0";
 
   try{
     const res = await fetch(url);
     const text = await res.text();
-
-    console.log("RAW:", text);
 
     const json = JSON.parse(
       text.replace("/*O_o*/","")
@@ -190,21 +188,16 @@ window.checkDuplicate = async function(member, className){
           .slice(0,-2)
     );
 
-    if(!json.table){
-      console.log("tableなし", json);
-      return false;
-    }
+    if(!json.table) return false;
 
     const rows = json.table.rows || [];
 
-    console.log("rows:", rows);
-
     for(const r of rows){
 
-      const m = String(r.c[1]?.v || "").trim(); // B列
-      const cls = String(r.c[2]?.v || "").trim(); // C列
+      const m = String(r.c[1]?.v || "").trim();
+      const cls = String(r.c[2]?.v || "").trim();
 
-      const rawDate = r.c[3]?.v; // D列
+      const rawDate = r.c[3]?.v;
       let date = "";
 
       if(rawDate instanceof Date){
@@ -216,23 +209,18 @@ window.checkDuplicate = async function(member, className){
         date = String(rawDate || "").trim();
       }
 
-      console.log("比較:", m, cls, date);
-
       if(
         m === cleanMember &&
         cls === className &&
         date === today
       ){
-        console.log("→ 重複あり");
         return true;
       }
     }
 
-    console.log("→ 重複なし");
     return false;
 
   }catch(e){
-    console.log("duplicate check error", e);
     return false;
   }
 

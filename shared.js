@@ -277,5 +277,36 @@ window.checkDuplicate = async function(member, selectedClass){
   }
 
 };
+  // ===== 二重受付チェック =====
+window.checkDuplicate = async function(member, className){
+
+  const today = new Date().toISOString().slice(0,10);
+
+  const url =
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
+    encodeURIComponent(
+      "select A where B='" + member + "' and C='" + className + "' and D='" + today + "'"
+    );
+
+  try{
+    const res = await fetch(url);
+    const text = await res.text();
+
+    const json = JSON.parse(
+      text.replace("/*O_o*/","")
+          .replace("google.visualization.Query.setResponse(","")
+          .slice(0,-2)
+    );
+
+    const rows = json.table.rows;
+
+    return rows.length > 0; // true = 重複あり
+
+  }catch(e){
+    console.log("duplicate check error", e);
+    return false;
+  }
+
+};
 
 })();

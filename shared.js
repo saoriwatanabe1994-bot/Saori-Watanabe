@@ -277,7 +277,7 @@ window.checkDuplicate = async function(member, selectedClass){
   }
 
 };
- // ===== 二重受付チェック =====
+// ===== 二重受付チェック（安定版）=====
 window.checkDuplicate = async function(member, className){
 
   const now = new Date();
@@ -288,14 +288,12 @@ window.checkDuplicate = async function(member, className){
     String(now.getDate()).padStart(2,"0");
 
   const url =
-  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-  "&sheet=受講ログ" +
-  "&tq=" +
-  encodeURIComponent(
-    "select A where B='" + member +
-    "' and C='" + className +
-    "' and D='" + today + "'"
-  );
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
+    "&sheet=受講ログ" +
+    "&tq=" +
+    encodeURIComponent(
+      "select B,C,D where B='" + member + "'"
+    );
 
   try{
     const res = await fetch(url);
@@ -307,9 +305,24 @@ window.checkDuplicate = async function(member, className){
           .slice(0,-2)
     );
 
-    const rows = json.table.rows;
+    const rows = json.table.rows || [];
 
-    return rows.length > 0;
+    for(const r of rows){
+
+      const m = r.c[0]?.v || "";
+      const cls = r.c[1]?.v || "";
+      const date = r.c[2]?.v || "";
+
+      if(
+        m === member &&
+        cls === className &&
+        date === today
+      ){
+        return true; // 重複あり
+      }
+    }
+
+    return false;
 
   }catch(e){
     console.log("duplicate check error", e);

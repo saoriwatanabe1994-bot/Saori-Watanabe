@@ -163,9 +163,23 @@ memberInput.addEventListener("keydown", (e) => {
     renderAll();
   }
 
-  function submit(className) {
-    if (submitting) return;
-    submitting = true;
+  async function submit(className){
+
+if(submitting) return;
+submitting=true;
+
+const member = window.currentMember;
+
+// ★ 二重チェック
+const isDup = await checkDuplicate(member, className);
+
+if(isDup){
+  submitting=false;
+
+  if(!confirm("⚠️ 同一日の同一クラス受付があります\nそれでも登録しますか？")){
+    return;
+  }
+}
 
     const url =
       APP_CONFIG.FORM_RESPONSE +

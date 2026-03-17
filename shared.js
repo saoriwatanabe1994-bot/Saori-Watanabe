@@ -196,16 +196,16 @@
 
     for(const r of rows){
 
-      const m = String(r.c[0]?.v || "").trim();
-      const cls = String(r.c[1]?.v || "").trim();
-      const date = String(r.c[2]?.f || "").trim();
+  const m = String(r.c[0]?.v || "").trim();
+  const cls = String(r.c[1]?.v || "").trim();
+  const date = String(r.c[2]?.v || "").trim(); // ←ここ直した
 
-      if(
-        m === String(member).trim() &&
-        cls === String(className).trim() &&
-        date === today
-      ){
-        return true;
+  if(
+    m === String(member).trim() &&
+    cls === String(className).trim() &&
+    date === today
+  ){
+    return true;
       }
     }
 

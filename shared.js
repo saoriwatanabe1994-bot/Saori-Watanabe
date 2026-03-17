@@ -167,59 +167,54 @@
   // ===== 二重受付チェック（最終安定版）=====
   window.checkDuplicate = async function(member, className){
 
-    const now = new Date();
+  const now = new Date();
 
-    const today =
-      now.getFullYear() + "-" +
-      String(now.getMonth()+1).padStart(2,"0") + "-" +
-      String(now.getDate()).padStart(2,"0");
+  const today =
+    now.getFullYear() + "-" +
+    String(now.getMonth()+1).padStart(2,"0") + "-" +
+    String(now.getDate()).padStart(2,"0");
 
-    const url =
-      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-      "&sheet=受講ログ" +
-      "&tq=" +
-      encodeURIComponent(
-        "select B,C,D where B='" + member + "'"
-      );
+  const url =
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
+    "&sheet=受講ログ" +
+    "&tq=" +
+    encodeURIComponent(
+      "select B,C,D where B='" + member + "'"
+    );
 
-    try{
-      const res = await fetch(url);
-      const text = await res.text();
+  try{
+    const res = await fetch(url);
+    const text = await res.text();
 
-      const json = JSON.parse(
-        text.replace("/*O_o*/","")
-            .replace("google.visualization.Query.setResponse(","")
-            .slice(0,-2)
-      );
+    const json = JSON.parse(
+      text.replace("/*O_o*/","")
+          .replace("google.visualization.Query.setResponse(","")
+          .slice(0,-2)
+    );
 
-      const rows = json.table.rows || [];
+    const rows = json.table.rows || [];
 
-      for(const r of rows){
+    for(const r of rows){
 
-  const m = String(r.c[0]?.v || "").trim();
-  const cls = String(r.c[1]?.v || "").trim();
+      const m = String(r.c[0]?.v || "").trim();
+      const cls = String(r.c[1]?.v || "").trim();
+      const date = String(r.c[2]?.f || "").trim();
 
-  // ★ここが最重要修正
-  const date = String(r.c[2]?.f || "").trim();
-
-  console.log("比較:", m, cls, date);
-
-  if(
-    m === String(member).trim() &&
-    cls === String(className).trim() &&
-    date === today
-  ){
-    return true;
-  }
-}
+      if(
+        m === String(member).trim() &&
+        cls === String(className).trim() &&
+        date === today
+      ){
+        return true;
       }
-
-      return false;
-
-    }catch(e){
-      console.log("duplicate check error", e);
-      return false;
     }
-  };
 
+    return false;
+
+  }catch(e){
+    console.log("duplicate check error", e);
+    return false;
+  }
+
+};
 })();

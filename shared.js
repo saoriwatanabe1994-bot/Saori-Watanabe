@@ -277,16 +277,11 @@ window.checkDuplicate = async function(member, selectedClass){
   }
 
 };
-  // ===== 二重受付チェック =====
+ // ===== 二重受付チェック =====
 window.checkDuplicate = async function(member, className){
 
   const today = new Date().toISOString().slice(0,10);
 
-const query =
-  "select A where B='" + member +
-  "' and C='" + className +
-  "' and TEXT(D,'yyyy-mm-dd')='" + today + "'";
-  
   const url =
   "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
   encodeURIComponent(
@@ -294,6 +289,7 @@ const query =
     "' and C='" + className +
     "' and TEXT(D,'yyyy-mm-dd')='" + today + "'"
   );
+
   try{
     const res = await fetch(url);
     const text = await res.text();

@@ -174,8 +174,8 @@ window.fetchCount = async function(member){
       return { member, count, last };
     }
 
-  catch(e){
-  alert("照会エラー\n" + e.message);
+ catch(e){
+  alert("照会エラー\n" + JSON.stringify(e));
 }
   return { member, count:0, last:"" };
 };

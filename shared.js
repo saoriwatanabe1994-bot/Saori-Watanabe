@@ -124,6 +124,23 @@ alert("クラス描画スタート");
 
   // ===== 受講数取得 =====
 window.fetchCount = function(member){
+  .then(text => {
+
+  const json = JSON.parse(
+    text.replace("/*O_o*/","")
+        .replace("google.visualization.Query.setResponse(","")
+        .slice(0,-2)
+  );
+
+  const rows = json.table?.rows || [];
+
+  // 👇 追加（超重要）
+  alert("行データ\n" + JSON.stringify(rows[0]));
+
+  const filtered = rows.filter(r => {
+    const e = String(r.c[4]?.v || "");
+    return e.includes(key);
+  });
 
   const now = new Date();
 

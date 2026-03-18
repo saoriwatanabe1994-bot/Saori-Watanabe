@@ -130,17 +130,16 @@
   return fetch(url)
     .then(res => res.text())
     .then(text => {
-      alert(text.slice(0,200));
 
-      const json = JSON.parse(
-  text.substring(
-    text.indexOf("{"),
-    text.lastIndexOf("}") + 1
-  )
-);
+  const json = JSON.parse(
+    text.substring(
+      text.indexOf("{"),
+      text.lastIndexOf("}") + 1
+    )
+  );
 
-      const rows = json.table?.rows || [];
-
+  const rows = json.table?.rows || [];
+      
       const filtered = rows.filter(r => {
         const m = String(r.c[0]?.v || "").trim();   // 会員番号
         const ymRow = String(r.c[1]?.v || "").trim(); // 年月

@@ -133,11 +133,8 @@ window.fetchCount = async function(member){
   const key = cleanMember + "_" + ym;
 
   const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-    "&gid=879977678" +
-    "&tq=" +
-    encodeURIComponent("select C,D where E contains '" + key + "'");
-
+  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
+  
   try{
     console.log("URL:", url);
 

@@ -115,52 +115,50 @@
   // ===== 受講数取得 =====
   window.fetchCount = function(member){
 
-    const now = new Date();
-    const ym =
-      now.getFullYear() + "-" +
-      String(now.getMonth()+1).padStart(2,"0");
+  const now = new Date();
+  const ym =
+    now.getFullYear() + "-" +
+    String(now.getMonth()+1).padStart(2,"0");
 
-    const cleanMember = String(member).replace(/[^\d]/g, "");
-    const key = cleanMember + "_" + ym;
+  const cleanMember = String(member).replace(/[^\d]/g, "");
 
-    const url =
-      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
+  const url =
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
 
-    return fetch(url)
-      .then(res => res.text())
-      .then(text => {
+  return fetch(url)
+    .then(res => res.text())
+    .then(text => {
 
-        const json = JSON.parse(
-          text.replace("/*O_o*/","")
-              .replace("google.visualization.Query.setResponse(","")
-              .slice(0,-2)
-        );
+      const json = JSON.parse(
+        text.replace("/*O_o*/","")
+            .replace("google.visualization.Query.setResponse(","")
+            .slice(0,-2)
+      );
 
-        const rows = json.table?.rows || [];
+      const rows = json.table?.rows || [];
 
-        const filtered = rows.filter(r => {
-  const m = String(r.c[0]?.v || "").trim();   // 会員番号
-  const ymRow = String(r.c[1]?.v || "").trim(); // 年月
-  return m === cleanMember && ymRow === ym;
-});
-
-let count = 0;
-let last = "";
-
-if(filtered.length > 0){
-  const row = filtered[0];
-  count = Number(row.c[2]?.v || 0);   // 受講回数
-  last = row.c[3]?.f || "";           // 最終受講
-}
-
-        return { member, count, last };
-      })
-      .catch(e => {
-        alert("照会エラー");
-        return { member, count:0, last:"" };
+      const filtered = rows.filter(r => {
+        const m = String(r.c[0]?.v || "").trim();   // 会員番号
+        const ymRow = String(r.c[1]?.v || "").trim(); // 年月
+        return m === cleanMember && ymRow === ym;
       });
-  };
 
+      let count = 0;
+      let last = "";
+
+      if(filtered.length > 0){
+        const row = filtered[0];
+        count = Number(row.c[2]?.v || 0);   // 受講回数
+        last = row.c[3]?.f || "";           // 最終受講
+      }
+
+      return { member, count, last };
+    })
+    .catch(e => {
+      alert("照会エラー");
+      return { member, count:0, last:"" };
+    });
+};
   // ===== 二重受付チェック =====
   window.checkDuplicate = async function(member, className){
 

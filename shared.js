@@ -120,7 +120,7 @@
   };
 
   // ===== 受講数取得 =====
-window.fetchCount = async function(member){
+window.fetchCount = function(member){
 
   const now = new Date();
 
@@ -129,53 +129,47 @@ window.fetchCount = async function(member){
     String(now.getMonth()+1).padStart(2,"0");
 
   const cleanMember = String(member).replace(/[^\d]/g, "");
-
   const key = cleanMember + "_" + ym;
 
   const url =
-  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
-  
-  try{
-    console.log("URL:", url);
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
 
-    const res = await fetch(url);
-    alert("fetch通った");
-    console.log("res:", res);
+  return fetch(url)
+    .then(res => res.text())
+    .then(text => {
 
-    const text = await res.text();
-    console.log("RAW:", text);
+      const json = JSON.parse(
+        text.replace("/*O_o*/","")
+            .replace("google.visualization.Query.setResponse(","")
+            .slice(0,-2)
+      );
 
-    const json = JSON.parse(
-      text.replace("/*O_o*/","")
-          .replace("google.visualization.Query.setResponse(","")
-          .slice(0,-2)
-    );
+      const rows = json.table?.rows || [];
 
-    console.log("JSON:", json);
+      // JS側で絞る（安定）
+      const filtered = rows.filter(r => {
+        const e = String(r.c[4]?.v || "");
+        return e.includes(key);
+      });
 
-    const rows = json.table?.rows || [];
-    console.log("rows:", rows);
+      const count = filtered.length;
 
-    if(rows.length > 0){
-
-      const count = rows.length;
-
-      const lastRow = rows[rows.length - 1];
       let last = "";
-
-      if(lastRow.c[1]?.f){
-        const f = lastRow.c[1].f;
-        const parts = f.split(" ")[0].split("/");
-        last = Number(parts[1]) + "/" + Number(parts[2]);
+      if(count > 0){
+        const lastRow = filtered[filtered.length - 1];
+        if(lastRow.c[3]?.f){
+          const f = lastRow.c[3].f;
+          const parts = f.split(" ")[0].split("/");
+          last = Number(parts[1]) + "/" + Number(parts[2]);
+        }
       }
 
       return { member, count, last };
-    }
-
- catch(e){
-  alert("照会エラー\n" + JSON.stringify(e));
-}
-  return { member, count:0, last:"" };
+    })
+    .catch(e => {
+      alert("照会エラー\n" + e);
+      return { member, count:0, last:"" };
+    });
 };
 
   // ===== 二重受付チェック（完全版）=====

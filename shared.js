@@ -67,6 +67,8 @@ alert("shared読み込みOK");
 
   // ===== クラス描画 =====
   window.renderClasses = function({ day, titleEl, containerEl, onSubmit }){
+    console.log("renderClasses呼ばれた");
+alert("クラス描画スタート");
 
     titleEl.textContent =
       day==="WS"
@@ -171,7 +173,7 @@ window.fetchCount = function(member){
       return { member, count:0, last:"" };
     });
 
-}; // ← ★これ忘れてた
+}; 
 
 // ===== 二重受付チェック =====
 window.checkDuplicate = async function(member, className){

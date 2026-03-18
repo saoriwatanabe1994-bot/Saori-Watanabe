@@ -1,4 +1,3 @@
-alert("shared読み込みOK");
 (() => {
 
   // ===== 共通設定 =====
@@ -67,8 +66,6 @@ alert("shared読み込みOK");
 
   // ===== クラス描画 =====
   window.renderClasses = function({ day, titleEl, containerEl, onSubmit }){
-    console.log("renderClasses呼ばれた");
-alert("クラス描画スタート");
 
     titleEl.textContent =
       day==="WS"

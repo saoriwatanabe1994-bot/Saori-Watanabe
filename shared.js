@@ -124,20 +124,21 @@ window.fetchCount = async function(member){
 
   const now = new Date();
 
-const ymd =
-  now.getFullYear() + "-" +
-  String(now.getMonth()+1).padStart(2,"0") + "-" +
-  String(now.getDate()).padStart(2,"0");
+  const ym =
+    now.getFullYear() + "-" +
+    String(now.getMonth()+1).padStart(2,"0");
 
-const cleanMember = String(member).replace(/[^\d]/g, "");
+  const cleanMember = String(member).replace(/[^\d]/g, "");
 
-const key = cleanMember + "_" + ymd;
+  const key = cleanMember + "_" + ym;
 
   const url =
-  "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-  "&gid=879977678" +
-  "&tq=" +
-  encodeURIComponent("select C,D where E='" + key + "'");
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
+    "&gid=879977678" +
+    "&tq=" +
+    encodeURIComponent(
+      "select C,D where E contains '" + key + "'"
+    );
 
   try{
     const res = await fetch(url);
@@ -153,11 +154,13 @@ const key = cleanMember + "_" + ymd;
 
     if(rows.length > 0){
 
-      const count = rows[0].c[0]?.v || 0;
+      const count = rows.length;
+
+      const lastRow = rows[rows.length - 1];
       let last = "";
 
-      if(rows[0].c[1]?.f){
-        const f = rows[0].c[1].f;
+      if(lastRow.c[1]?.f){
+        const f = lastRow.c[1].f;
         const parts = f.split(" ")[0].split("/");
         last = Number(parts[1]) + "/" + Number(parts[2]);
       }

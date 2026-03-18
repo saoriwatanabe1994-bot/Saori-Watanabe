@@ -120,8 +120,10 @@
     now.getFullYear() + "-" +
     String(now.getMonth()+1).padStart(2,"0");
 
-  const cleanMember = String(member).replace(/[^\d]/g, "");
-
+  const cleanMember = String(member)
+  .split("?")[0]
+  .trim();
+    
   const url =
     "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
 

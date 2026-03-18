@@ -139,6 +139,7 @@ window.fetchCount = async function(member){
     console.log("URL:", url);
 
     const res = await fetch(url);
+    alert("fetch通った");
     console.log("res:", res);
 
     const text = await res.text();

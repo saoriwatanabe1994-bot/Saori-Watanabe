@@ -139,21 +139,19 @@
         const rows = json.table?.rows || [];
 
         const filtered = rows.filter(r => {
-          const e = String(r.c[4]?.v || "");
-          return e.includes(key);
-        });
+  const m = String(r.c[0]?.v || "").trim();   // 会員番号
+  const ymRow = String(r.c[1]?.v || "").trim(); // 年月
+  return m === cleanMember && ymRow === ym;
+});
 
-        const count = filtered.length;
+let count = 0;
+let last = "";
 
-        let last = "";
-        if(count > 0){
-          const lastRow = filtered[filtered.length - 1];
-          if(lastRow.c[3]?.f){
-            const f = lastRow.c[3].f;
-            const parts = f.split(" ")[0].split("/");
-            last = Number(parts[1]) + "/" + Number(parts[2]);
-          }
-        }
+if(filtered.length > 0){
+  const row = filtered[0];
+  count = Number(row.c[2]?.v || 0);   // 受講回数
+  last = row.c[3]?.f || "";           // 最終受講
+}
 
         return { member, count, last };
       })

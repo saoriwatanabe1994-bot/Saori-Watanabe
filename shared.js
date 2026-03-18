@@ -124,11 +124,14 @@ window.fetchCount = async function(member){
 
   const now = new Date();
 
-  const ym =
-    now.getFullYear() + "-" +
-    String(now.getMonth()+1).padStart(2,"0");
+const ymd =
+  now.getFullYear() + "-" +
+  String(now.getMonth()+1).padStart(2,"0") + "-" +
+  String(now.getDate()).padStart(2,"0");
 
-  const key = member + "_" + ym;
+const cleanMember = String(member).replace(/[^\d]/g, "");
+
+const key = cleanMember + "_" + ymd;
 
   const url =
   "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +

@@ -1,8 +1,4 @@
 (() => {
-  // ★ デバッグ用（LIFFなしでも動かす）
-if (!window.currentMember) {
-  window.currentMember = "9999999";
-}
 
   // ===== 共通設定 =====
   window.APP_CONFIG = {
@@ -57,13 +53,10 @@ if (!window.currentMember) {
 
     window.DAY_MAP.forEach((day)=>{
       const btn=document.createElement("button");
-
       btn.type="button";
       btn.textContent = day==="WS" ? "WS" : `${day}曜`;
       btn.className = "day-btn"+(day===selectedDay?" today":"");
-
       btn.onclick = ()=>onSelect(day);
-
       dayButtonsEl.appendChild(btn);
     });
   };
@@ -81,15 +74,12 @@ if (!window.currentMember) {
     const list = window.CLASSES_BY_DAY[day] || [];
 
     list.forEach((cls)=>{
-
       const btn=document.createElement("button");
-
       btn.type="button";
       btn.textContent=`受付 ▶ ${cls}`;
       btn.className="class-btn";
 
       btn.onclick = async () => {
-
         const member = (window.currentMember || "").toString().trim();
 
         if(!member){
@@ -100,10 +90,7 @@ if (!window.currentMember) {
         const isDup = await window.checkDuplicate(member, cls);
 
         if(isDup){
-          const ok = confirm(
-            "⚠️ すでに受付済みです\n\n" +
-            "続行しますか？"
-          );
+          const ok = confirm("⚠️ すでに受付済みです\n\n続行しますか？");
           if(!ok) return;
         }
 
@@ -116,52 +103,83 @@ if (!window.currentMember) {
 
   // ===== LIFF初期化 =====
   window.initLiffSafe = async function(){
-  try{
-    if (typeof liff !== "undefined") {
-      await liff.init({liffId:window.APP_CONFIG.LIFF_ID});
-    } else {
-      console.log("LIFFなしモード");
+    try{
+      if (typeof liff !== "undefined") {
+        await liff.init({liffId:window.APP_CONFIG.LIFF_ID});
+      }
+    }catch(e){
+      console.log("LIFF init error:", e);
     }
-  }catch(e){
-    console.log("LIFF init error:", e);
-  }
-};
+  };
 
   // ===== 受講数取得 =====
-window.fetchCount = function(member){
-  .then(text => {
+  window.fetchCount = function(member){
 
-  const json = JSON.parse(
-    text.replace("/*O_o*/","")
-        .replace("google.visualization.Query.setResponse(","")
-        .slice(0,-2)
-  );
+    const now = new Date();
+    const ym =
+      now.getFullYear() + "-" +
+      String(now.getMonth()+1).padStart(2,"0");
 
-  const rows = json.table?.rows || [];
+    const cleanMember = String(member).replace(/[^\d]/g, "");
+    const key = cleanMember + "_" + ym;
 
-  // 👇 追加（超重要）
-  alert("行データ\n" + JSON.stringify(rows[0]));
+    const url =
+      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
 
-  const filtered = rows.filter(r => {
-    const e = String(r.c[4]?.v || "");
-    return e.includes(key);
-  });
+    return fetch(url)
+      .then(res => res.text())
+      .then(text => {
 
-  const now = new Date();
+        const json = JSON.parse(
+          text.replace("/*O_o*/","")
+              .replace("google.visualization.Query.setResponse(","")
+              .slice(0,-2)
+        );
 
-  const ym =
-    now.getFullYear() + "-" +
-    String(now.getMonth()+1).padStart(2,"0");
+        const rows = json.table?.rows || [];
 
-  const cleanMember = String(member).replace(/[^\d]/g, "");
-  const key = cleanMember + "_" + ym;
+        const filtered = rows.filter(r => {
+          const e = String(r.c[4]?.v || "");
+          return e.includes(key);
+        });
 
-  const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
+        const count = filtered.length;
 
-  return fetch(url)
-    .then(res => res.text())
-    .then(text => {
+        let last = "";
+        if(count > 0){
+          const lastRow = filtered[filtered.length - 1];
+          if(lastRow.c[3]?.f){
+            const f = lastRow.c[3].f;
+            const parts = f.split(" ")[0].split("/");
+            last = Number(parts[1]) + "/" + Number(parts[2]);
+          }
+        }
+
+        return { member, count, last };
+      })
+      .catch(e => {
+        alert("照会エラー");
+        return { member, count:0, last:"" };
+      });
+  };
+
+  // ===== 二重受付チェック =====
+  window.checkDuplicate = async function(member, className){
+
+    const cleanMember = String(member).replace(/[^\d]/g, "");
+
+    const now = new Date();
+    const today =
+      now.getFullYear() + "-" +
+      String(now.getMonth()+1).padStart(2,"0") + "-" +
+      String(now.getDate()).padStart(2,"0");
+
+    const url =
+      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
+
+    try{
+      const res = await fetch(url);
+      const text = await res.text();
 
       const json = JSON.parse(
         text.replace("/*O_o*/","")
@@ -171,153 +189,33 @@ window.fetchCount = function(member){
 
       const rows = json.table?.rows || [];
 
-      const filtered = rows.filter(r => {
-        const e = String(r.c[4]?.v || "");
-        return e.includes(key);
-      });
+      for(const r of rows){
 
-      const count = filtered.length;
+        const m = String(r.c[1]?.v || "").trim();
+        const cls = String(r.c[2]?.v || "").trim();
 
-      let last = "";
-      if(count > 0){
-        const lastRow = filtered[filtered.length - 1];
-        if(lastRow.c[3]?.f){
-          const f = lastRow.c[3].f;
-          const parts = f.split(" ")[0].split("/");
-          last = Number(parts[1]) + "/" + Number(parts[2]);
+        const rawDate = r.c[3]?.v;
+        let date = "";
+
+        if(rawDate instanceof Date){
+          date =
+            rawDate.getFullYear() + "-" +
+            String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
+            String(rawDate.getDate()).padStart(2,"0");
+        }else{
+          date = String(rawDate || "").trim();
+        }
+
+        if(m === cleanMember && cls === className && date === today){
+          return true;
         }
       }
 
-      return { member, count, last };
-    })
-    .catch(e => {
-      alert("照会エラー\n" + e);
-      return { member, count:0, last:"" };
-    });
+      return false;
 
-}; 
-
-// ===== 二重受付チェック =====
-window.checkDuplicate = async function(member, className){
-
-  const cleanMember = String(member).replace(/[^\d]/g, "");
-
-  const now = new Date();
-  const today =
-    now.getFullYear() + "-" +
-    String(now.getMonth()+1).padStart(2,"0") + "-" +
-    String(now.getDate()).padStart(2,"0");
-
-  const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
-
-  try{
-    const res = await fetch(url);
-    const text = await res.text();
-
-    const json = JSON.parse(
-      text.replace("/*O_o*/","")
-          .replace("google.visualization.Query.setResponse(","")
-          .slice(0,-2)
-    );
-
-    if(!json.table) return false;
-
-    const rows = json.table.rows || [];
-
-    for(const r of rows){
-
-      const m = String(r.c[1]?.v || "").trim();
-      const cls = String(r.c[2]?.v || "").trim();
-
-      const rawDate = r.c[3]?.v;
-      let date = "";
-
-      if(rawDate instanceof Date){
-        date =
-          rawDate.getFullYear() + "-" +
-          String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
-          String(rawDate.getDate()).padStart(2,"0");
-      }else{
-        date = String(rawDate || "").trim();
-      }
-
-      if(
-        m === cleanMember &&
-        cls === className &&
-        date === today
-      ){
-        return true;
-      }
+    }catch(e){
+      return false;
     }
+  };
 
-    return false;
-
-  }catch(e){
-    return false;
-  }
-
-};
-  // ===== 二重受付チェック（完全版）=====
-window.checkDuplicate = async function(member, className){
-
-  const cleanMember = String(member).replace(/[^\d]/g, "");
-
-  const now = new Date();
-  const today =
-    now.getFullYear() + "-" +
-    String(now.getMonth()+1).padStart(2,"0") + "-" +
-    String(now.getDate()).padStart(2,"0");
-
-  const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
-    "&gid=0";
-
-  try{
-    const res = await fetch(url);
-    const text = await res.text();
-
-    const json = JSON.parse(
-      text.replace("/*O_o*/","")
-          .replace("google.visualization.Query.setResponse(","")
-          .slice(0,-2)
-    );
-
-    if(!json.table) return false;
-
-    const rows = json.table.rows || [];
-
-    for(const r of rows){
-
-      const m = String(r.c[1]?.v || "").trim();
-      const cls = String(r.c[2]?.v || "").trim();
-
-      const rawDate = r.c[3]?.v;
-      let date = "";
-
-      if(rawDate instanceof Date){
-        date =
-          rawDate.getFullYear() + "-" +
-          String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
-          String(rawDate.getDate()).padStart(2,"0");
-      }else{
-        date = String(rawDate || "").trim();
-      }
-
-      if(
-        m === cleanMember &&
-        cls === className &&
-        date === today
-      ){
-        return true;
-      }
-    }
-
-    return false;
-
-  }catch(e){
-    return false;
-  }
-
-};
 })();

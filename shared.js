@@ -130,6 +130,7 @@
   return fetch(url)
     .then(res => res.text())
     .then(text => {
+      alert(text.slice(0,200));
 
       const json = JSON.parse(
   text.substring(

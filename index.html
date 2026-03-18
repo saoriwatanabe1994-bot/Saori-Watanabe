@@ -110,6 +110,9 @@ let member = null;
 const params = new URLSearchParams(window.location.search);
 member = params.get("member");
 
+if(member){
+  member = decodeURIComponent(member).split("?")[0];
+}
 // LIFFでURLが消えた場合
 if(!member){
   const url = new URL(location.href);

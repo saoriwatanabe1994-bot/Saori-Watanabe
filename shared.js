@@ -146,7 +146,6 @@ window.fetchCount = function(member){
 
       const rows = json.table?.rows || [];
 
-      // JS側で絞る（安定）
       const filtered = rows.filter(r => {
         const e = String(r.c[4]?.v || "");
         return e.includes(key);
@@ -171,6 +170,69 @@ window.fetchCount = function(member){
       return { member, count:0, last:"" };
     });
 
+}; // ← ★これ忘れてた
+
+// ===== 二重受付チェック =====
+window.checkDuplicate = async function(member, className){
+
+  const cleanMember = String(member).replace(/[^\d]/g, "");
+
+  const now = new Date();
+  const today =
+    now.getFullYear() + "-" +
+    String(now.getMonth()+1).padStart(2,"0") + "-" +
+    String(now.getDate()).padStart(2,"0");
+
+  const url =
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
+
+  try{
+    const res = await fetch(url);
+    const text = await res.text();
+
+    const json = JSON.parse(
+      text.replace("/*O_o*/","")
+          .replace("google.visualization.Query.setResponse(","")
+          .slice(0,-2)
+    );
+
+    if(!json.table) return false;
+
+    const rows = json.table.rows || [];
+
+    for(const r of rows){
+
+      const m = String(r.c[1]?.v || "").trim();
+      const cls = String(r.c[2]?.v || "").trim();
+
+      const rawDate = r.c[3]?.v;
+      let date = "";
+
+      if(rawDate instanceof Date){
+        date =
+          rawDate.getFullYear() + "-" +
+          String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
+          String(rawDate.getDate()).padStart(2,"0");
+      }else{
+        date = String(rawDate || "").trim();
+      }
+
+      if(
+        m === cleanMember &&
+        cls === className &&
+        date === today
+      ){
+        return true;
+      }
+    }
+
+    return false;
+
+  }catch(e){
+    return false;
+  }
+
+};
   // ===== 二重受付チェック（完全版）=====
 window.checkDuplicate = async function(member, className){
 

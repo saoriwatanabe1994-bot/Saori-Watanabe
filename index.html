@@ -117,13 +117,19 @@ if(!member){
 }
 
 // それでも無ければcontextから取得
-if(!member && liff.isInClient()){
-  const ctx = liff.getContext();
-  if(ctx && ctx.queryParams){
-    member = ctx.queryParams.member;
+if(!member && typeof liff !== "undefined"){
+  try{
+    if(liff.isInClient()){
+      const ctx = liff.getContext();
+      if(ctx && ctx.queryParams){
+        member = ctx.queryParams.member;
+      }
+    }
+  }catch(e){
+    console.log("LIFF context error", e);
   }
 }
-  window.currentMember = member;
+  window.currentMember = member || "";
 const title = document.getElementById("title");
 const container = document.getElementById("container");
 const dayButtons = document.getElementById("dayButtons");

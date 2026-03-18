@@ -132,10 +132,11 @@
     .then(text => {
 
       const json = JSON.parse(
-        text.replace("/*O_o*/","")
-            .replace("google.visualization.Query.setResponse(","")
-            .slice(0,-2)
-      );
+  text.substring(
+    text.indexOf("{"),
+    text.lastIndexOf("}") + 1
+  )
+);
 
       const rows = json.table?.rows || [];
 

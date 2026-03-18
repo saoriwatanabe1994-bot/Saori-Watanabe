@@ -1,4 +1,8 @@
 (() => {
+  // ★ デバッグ用（LIFFなしでも動かす）
+if (!window.currentMember) {
+  window.currentMember = "9999999";
+}
 
   // ===== 共通設定 =====
   window.APP_CONFIG = {
@@ -112,12 +116,16 @@
 
   // ===== LIFF初期化 =====
   window.initLiffSafe = async function(){
-    try{
+  try{
+    if (typeof liff !== "undefined") {
       await liff.init({liffId:window.APP_CONFIG.LIFF_ID});
-    }catch(e){
-      console.log("LIFF init error:", e);
+    } else {
+      console.log("LIFFなしモード");
     }
-  };
+  }catch(e){
+    console.log("LIFF init error:", e);
+  }
+};
 
   // ===== 受講数取得 =====
 window.fetchCount = function(member){

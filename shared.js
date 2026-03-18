@@ -174,11 +174,9 @@ window.fetchCount = async function(member){
       return { member, count, last };
     }
 
-  }catch(e){
-    console.log("🔥 エラー詳細:", e);
-    alert("ここでエラー出てる");
-  }
-
+  catch(e){
+  alert("照会エラー\n" + e.message);
+}
   return { member, count:0, last:"" };
 };
 

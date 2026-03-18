@@ -136,13 +136,16 @@ window.fetchCount = async function(member){
     "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json" +
     "&gid=879977678" +
     "&tq=" +
-    encodeURIComponent(
-      "select C,D where E contains '" + key + "'"
-    );
+    encodeURIComponent("select C,D where E contains '" + key + "'");
 
   try{
+    console.log("URL:", url);
+
     const res = await fetch(url);
+    console.log("res:", res);
+
     const text = await res.text();
+    console.log("RAW:", text);
 
     const json = JSON.parse(
       text.replace("/*O_o*/","")
@@ -150,7 +153,10 @@ window.fetchCount = async function(member){
           .slice(0,-2)
     );
 
-    const rows = json.table.rows || [];
+    console.log("JSON:", json);
+
+    const rows = json.table?.rows || [];
+    console.log("rows:", rows);
 
     if(rows.length > 0){
 
@@ -169,7 +175,8 @@ window.fetchCount = async function(member){
     }
 
   }catch(e){
-    console.log("fetchCount error", e);
+    console.log("🔥 エラー詳細:", e);
+    alert("ここでエラー出てる");
   }
 
   return { member, count:0, last:"" };

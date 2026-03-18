@@ -120,48 +120,53 @@
   };
 
   // ===== 受講数取得 =====
-  window.fetchCount = async function(member){
+window.fetchCount = async function(member){
 
-    const ym = new Date().toISOString().slice(0,7);
-    const key = member + "_" + ym;
+  const now = new Date();
 
-    const url =
-      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
-      encodeURIComponent("select C,D where E='" + key + "'") +
-      "&sheet=照会用";
+  const ym =
+    now.getFullYear() + "-" +
+    String(now.getMonth()+1).padStart(2,"0");
 
-    try{
-      const res = await fetch(url);
-      const text = await res.text();
+  const key = member + "_" + ym;
 
-      const json = JSON.parse(
-        text.replace("/*O_o*/","")
-            .replace("google.visualization.Query.setResponse(","")
-            .slice(0,-2)
-      );
+  const url =
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
+    encodeURIComponent("select C,D where E='" + key + "'") +
+    "&sheet=照会用";
 
-      const rows = json.table.rows;
+  try{
+    const res = await fetch(url);
+    const text = await res.text();
 
-      if(rows.length > 0){
+    const json = JSON.parse(
+      text.replace("/*O_o*/","")
+          .replace("google.visualization.Query.setResponse(","")
+          .slice(0,-2)
+    );
 
-        const count = rows[0].c[0]?.v || 0;
-        let last = "";
+    const rows = json.table.rows || [];
 
-        if(rows[0].c[1]?.f){
-          const f = rows[0].c[1].f;
-          const parts = f.split(" ")[0].split("/");
-          last = Number(parts[1]) + "/" + Number(parts[2]);
-        }
+    if(rows.length > 0){
 
-        return { member, count, last };
+      const count = rows[0].c[0]?.v || 0;
+      let last = "";
+
+      if(rows[0].c[1]?.f){
+        const f = rows[0].c[1].f;
+        const parts = f.split(" ")[0].split("/");
+        last = Number(parts[1]) + "/" + Number(parts[2]);
       }
 
-    }catch(e){
-      console.log(e);
+      return { member, count, last };
     }
 
-    return { member, count:0, last:"" };
-  };
+  }catch(e){
+    console.log("fetchCount error", e);
+  }
+
+  return { member, count:0, last:"" };
+};
 
   // ===== 二重受付チェック（完全版）=====
 window.checkDuplicate = async function(member, className){

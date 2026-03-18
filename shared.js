@@ -170,7 +170,6 @@ window.fetchCount = function(member){
       alert("照会エラー\n" + e);
       return { member, count:0, last:"" };
     });
-};
 
   // ===== 二重受付チェック（完全版）=====
 window.checkDuplicate = async function(member, className){

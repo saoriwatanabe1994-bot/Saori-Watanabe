@@ -113,61 +113,52 @@
   };
 
   // ===== 受講数取得 =====
-  window.fetchCount = function(member){
+  window.fetchCount = async function(member){
 
-  const now = new Date();
-  const ym =
-    now.getFullYear() + "-" +
-    String(now.getMonth()+1).padStart(2,"0");
+  member = String(member).split("?")[0].trim();
 
-  const cleanMember = String(member)
-    .split("?")[0]
-    .trim();
+  const ym = new Date().toISOString().slice(0,7); // 2026-03
 
   const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
+    encodeURIComponent(
+      "select C,D where E contains '" + member + "_" + ym + "'"
+    );
 
-  return fetch(url)
-    .then(res => res.text())
-    .then(text => {
+  try{
 
-      // 🔥 安全パース（失敗しない版）
-      let json;
-      try{
-        json = JSON.parse(
-          text.substring(
-            text.indexOf("{"),
-            text.lastIndexOf("}") + 1
-          )
-        );
-      }catch(e){
-        alert("データ解析エラー");
-        return { member, count:0, last:"" };
-      }
+    const res = await fetch(url);
+    const text = await res.text();
 
-      const rows = json.table?.rows || [];
+    const json = JSON.parse(
+      text.substring(
+        text.indexOf("{"),
+        text.lastIndexOf("}") + 1
+      )
+    );
 
-      const filtered = rows.filter(r => {
-        const m = String(r.c[0]?.v || "").trim();   // 会員番号
-        const ymRow = String(r.c[1]?.v || "").trim(); // 年月
-        return m === cleanMember && ymRow === ym;
-      });
+    const rows = json.table?.rows || [];
 
-      let count = 0;
+    if(rows.length > 0){
+
+      const count = rows[0].c[0]?.v || 0;
+
       let last = "";
 
-      if(filtered.length > 0){
-        const row = filtered[0];
-        count = Number(row.c[2]?.v || 0);   // 受講回数
-        last = row.c[3]?.f || "";           // 最終受講
+      if(rows[0].c[1]?.f){
+        const f = rows[0].c[1].f;
+        const parts = f.split(" ")[0].split("/");
+        last = Number(parts[1]) + "/" + Number(parts[2]);
       }
 
       return { member, count, last };
-    })
-    .catch(e => {
-      alert("通信エラー");
-      return { member, count:0, last:"" };
-    });
+    }
+
+  }catch(e){
+    console.log(e);
+  }
+
+  return { member, count:0, last:"" };
 };
   // ===== 二重受付チェック =====
   window.checkDuplicate = async function(member, className){

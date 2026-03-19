@@ -24,9 +24,9 @@
 
   // ===== 今日の曜日 =====
   window.getTokyoWeekdayLabel = function(){
-    const wd = new Intl.DateTimeFormat("en-US",{
-      timeZone:"Asia/Tokyo",
-      weekday:"short",
+    const wd = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Tokyo",
+      weekday: "short",
     }).format(new Date());
 
     const map = {
@@ -49,14 +49,14 @@
 
   // ===== 曜日ボタン =====
   window.renderDayButtons = function({ dayButtonsEl, selectedDay, onSelect }){
-    dayButtonsEl.innerHTML="";
+    dayButtonsEl.innerHTML = "";
 
-    window.DAY_MAP.forEach((day)=>{
-      const btn=document.createElement("button");
-      btn.type="button";
-      btn.textContent = day==="WS" ? "WS" : `${day}曜`;
-      btn.className = "day-btn"+(day===selectedDay?" today":"");
-      btn.onclick = ()=>onSelect(day);
+    window.DAY_MAP.forEach((day) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = day === "WS" ? "WS" : `${day}曜`;
+      btn.className = "day-btn" + (day === selectedDay ? " today" : "");
+      btn.onclick = () => onSelect(day);
       dayButtonsEl.appendChild(btn);
     });
   };
@@ -65,19 +65,19 @@
   window.renderClasses = function({ day, titleEl, containerEl, onSubmit }){
 
     titleEl.textContent =
-      day==="WS"
-      ? "本日のクラス（WS）"
-      : `本日のクラス（${day}曜日）`;
+      day === "WS"
+        ? "本日のクラス（WS）"
+        : `本日のクラス（${day}曜日）`;
 
-    containerEl.innerHTML="";
+    containerEl.innerHTML = "";
 
     const list = window.CLASSES_BY_DAY[day] || [];
 
-    list.forEach((cls)=>{
-      const btn=document.createElement("button");
-      btn.type="button";
-      btn.textContent=`受付 ▶ ${cls}`;
-      btn.className="class-btn";
+    list.forEach((cls) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = `受付 ▶ ${cls}`;
+      btn.className = "class-btn";
 
       btn.onclick = async () => {
         const member = (window.currentMember || "").toString().trim();
@@ -104,74 +104,108 @@
   // ===== LIFF初期化 =====
   window.initLiffSafe = async function(){
     try{
-      if (typeof liff !== "undefined") {
-        await liff.init({liffId:window.APP_CONFIG.LIFF_ID});
+      if(typeof liff !== "undefined"){
+        await liff.init({ liffId: window.APP_CONFIG.LIFF_ID });
       }
     }catch(e){
       console.log("LIFF init error:", e);
     }
   };
 
-// ===== 受講数取得 =====
-window.fetchCount = async function(member){
+  // ===== 照会中表示 =====
+  window.showLoading = function(){
+    const complete = document.getElementById("complete");
+    const completeDetail = document.getElementById("completeDetail");
 
-  const cleanMember = String(member)
-    .split("?")[0]
-    .trim();
+    if(!complete || !completeDetail) return;
 
-  const now = new Date();
-  const ym =
-    now.getFullYear() + "-" +
-    String(now.getMonth()+1).padStart(2,"0");
+    completeDetail.innerHTML =
+      "<span class='complete-title'>受講数照会</span><br><br>" +
+      "照会中…";
 
-  const key = cleanMember + "_" + ym;
+    complete.style.display = "flex";
+  };
 
-  const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678" +
-    "&tq=" +
-    encodeURIComponent("select C,D where E='" + key + "'");
+  // ===== 受講数表示 =====
+  window.showCount = function(data){
+    const complete = document.getElementById("complete");
+    const completeDetail = document.getElementById("completeDetail");
 
-  try{
-    const res = await fetch(url);
-    const text = await res.text();
+    if(!complete || !completeDetail) return;
 
-    const json = JSON.parse(
-      text.substring(
-        text.indexOf("{"),
-        text.lastIndexOf("}") + 1
-      )
-    );
+    completeDetail.innerHTML =
+      "<span class='complete-title'>受講数照会</span><br><br>" +
+      "会員番号：<b>" + window.escapeHtml(data.member) + "</b><br>" +
+      "今月受講：<b>" + window.escapeHtml(data.count) + " 回</b><br>" +
+      "最終受講：<b>" + window.escapeHtml(data.last) + "</b>";
 
-    const rows = json.table?.rows || [];
+    complete.style.display = "flex";
 
-    if(rows.length > 0){
+    setTimeout(() => {
+      complete.style.display = "none";
+    }, 5000);
+  };
 
-      const count = Number(rows[0].c[0]?.v || 0);
+  // ===== 受講数取得 =====
+  window.fetchCount = async function(member){
 
-      let last = "";
-      if(rows[0].c[1]?.f){
-        const f = rows[0].c[1].f;
-        const parts = f.split(" ")[0].split("/");
-        last = Number(parts[1]) + "/" + Number(parts[2]);
+    const cleanMember = String(member)
+      .split("?")[0]
+      .trim();
+
+    const now = new Date();
+    const ym =
+      now.getFullYear() + "-" +
+      String(now.getMonth() + 1).padStart(2, "0");
+
+    const key = cleanMember + "_" + ym;
+
+    const url =
+      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678" +
+      "&tq=" +
+      encodeURIComponent("select C,D where E='" + key + "'");
+
+    try{
+      const res = await fetch(url);
+      const text = await res.text();
+
+      const json = JSON.parse(
+        text.substring(
+          text.indexOf("{"),
+          text.lastIndexOf("}") + 1
+        )
+      );
+
+      const rows = json.table?.rows || [];
+
+      if(rows.length > 0){
+        const count = Number(rows[0].c[0]?.v || 0);
+
+        let last = "";
+        if(rows[0].c[1]?.f){
+          const f = rows[0].c[1].f;
+          const parts = f.split(" ")[0].split("/");
+          last = Number(parts[1]) + "/" + Number(parts[2]);
+        }
+
+        return {
+          member: cleanMember,
+          count: count,
+          last: last
+        };
       }
 
-      return {
-        member: cleanMember,
-        count: count,
-        last: last
-      };
+    }catch(e){
+      console.log("fetchCount error:", e);
     }
 
-  }catch(e){
-    console.log("fetchCount error:", e);
-  }
-
-  return {
-    member: cleanMember,
-    count: 0,
-    last: ""
+    return {
+      member: cleanMember,
+      count: 0,
+      last: ""
+    };
   };
-};
+
   // ===== 二重受付チェック =====
   window.checkDuplicate = async function(member, className){
 
@@ -180,8 +214,8 @@ window.fetchCount = async function(member){
     const now = new Date();
     const today =
       now.getFullYear() + "-" +
-      String(now.getMonth()+1).padStart(2,"0") + "-" +
-      String(now.getDate()).padStart(2,"0");
+      String(now.getMonth() + 1).padStart(2, "0") + "-" +
+      String(now.getDate()).padStart(2, "0");
 
     const url =
       "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
@@ -199,7 +233,6 @@ window.fetchCount = async function(member){
       const rows = json.table?.rows || [];
 
       for(const r of rows){
-
         const m = String(r.c[1]?.v || "").trim();
         const cls = String(r.c[2]?.v || "").trim();
 
@@ -209,8 +242,8 @@ window.fetchCount = async function(member){
         if(rawDate instanceof Date){
           date =
             rawDate.getFullYear() + "-" +
-            String(rawDate.getMonth()+1).padStart(2,"0") + "-" +
-            String(rawDate.getDate()).padStart(2,"0");
+            String(rawDate.getMonth() + 1).padStart(2, "0") + "-" +
+            String(rawDate.getDate()).padStart(2, "0");
         }else{
           date = String(rawDate || "").trim();
         }

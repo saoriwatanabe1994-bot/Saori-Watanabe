@@ -121,9 +121,9 @@
     String(now.getMonth()+1).padStart(2,"0");
 
   const cleanMember = String(member)
-  .split("?")[0]
-  .trim();
-    
+    .split("?")[0]
+    .trim();
+
   const url =
     "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
 
@@ -131,15 +131,22 @@
     .then(res => res.text())
     .then(text => {
 
-  const json = JSON.parse(
-    text.substring(
-      text.indexOf("{"),
-      text.lastIndexOf("}") + 1
-    )
-  );
+      // 🔥 安全パース（失敗しない版）
+      let json;
+      try{
+        json = JSON.parse(
+          text.substring(
+            text.indexOf("{"),
+            text.lastIndexOf("}") + 1
+          )
+        );
+      }catch(e){
+        alert("データ解析エラー");
+        return { member, count:0, last:"" };
+      }
 
-  const rows = json.table?.rows || [];
-      
+      const rows = json.table?.rows || [];
+
       const filtered = rows.filter(r => {
         const m = String(r.c[0]?.v || "").trim();   // 会員番号
         const ymRow = String(r.c[1]?.v || "").trim(); // 年月
@@ -158,7 +165,7 @@
       return { member, count, last };
     })
     .catch(e => {
-      alert("照会エラー");
+      alert("通信エラー");
       return { member, count:0, last:"" };
     });
 };

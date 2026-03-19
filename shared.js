@@ -19,7 +19,7 @@
     "木":["SERINAキッズ","SERINA初中級","Shogo","RIN","心","K×G瀬戸"],
     "金":["manaキッズ","mana初級","KANAMI","RYUYA","SAMURAI"],
     "土":["幼児","nikoキッズ","SAORI","TAKUEI","愛梨","MAHIRO初級","MAHIRO中級"],
-    "WS":["WS_3/14konoka練習会","WS_3/21キッズ中級","WS_3/22キッズ中級"]
+    "WS":["WS_3/21キッズ中級","WS_3/22キッズ中級"]
   };
 
   // ===== 今日の曜日 =====

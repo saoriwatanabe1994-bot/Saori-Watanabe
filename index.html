@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js"></script>
+<script src="shared.js?v=20260319-1"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -94,169 +94,163 @@ display:block;
 <div id="container"></div>
 
 <div id="complete">
-<div id="completeBox">
-<div id="completeDetail"></div>
-</div>
+  <div id="completeBox">
+    <div id="completeDetail"></div>
+  </div>
 </div>
 
 <script>
-
 (async () => {
 
-await initLiffSafe();
+  await initLiffSafe();
 
-let member = null;
+  let member = null;
 
-const params = new URLSearchParams(window.location.search);
-member = params.get("member");
+  const params = new URLSearchParams(window.location.search);
+  member = params.get("member");
 
-if(member){
-  member = decodeURIComponent(member).split("?")[0];
-}
-// LIFFでURLが消えた場合
-if(!member){
-  const url = new URL(location.href);
-  member = url.searchParams.get("member");
-}
+  if(member){
+    member = decodeURIComponent(member).split("?")[0].trim();
+  }
 
-// それでも無ければcontextから取得
-if(!member && typeof liff !== "undefined"){
-  try{
-    if(liff.isInClient()){
-      const ctx = liff.getContext();
-      if(ctx && ctx.queryParams){
-        member = ctx.queryParams.member;
-      }
+  // LIFFでURLが消えた場合
+  if(!member){
+    const url = new URL(location.href);
+    member = url.searchParams.get("member");
+
+    if(member){
+      member = decodeURIComponent(member).split("?")[0].trim();
     }
-  }catch(e){
-    console.log("LIFF context error", e);
   }
-}
+
+  // それでも無ければcontextから取得
+  if(!member && typeof liff !== "undefined"){
+    try{
+      if(liff.isInClient()){
+        const ctx = liff.getContext();
+        if(ctx && ctx.queryParams && ctx.queryParams.member){
+          member = String(ctx.queryParams.member).split("?")[0].trim();
+        }
+      }
+    }catch(e){
+      console.log("LIFF context error", e);
+    }
+  }
+
   window.currentMember = member || "";
-const title = document.getElementById("title");
-const container = document.getElementById("container");
-const dayButtons = document.getElementById("dayButtons");
 
-let selectedDay = getTokyoWeekdayLabel();
-if(selectedDay==="日") selectedDay="月";
+  const title = document.getElementById("title");
+  const container = document.getElementById("container");
+  const dayButtons = document.getElementById("dayButtons");
 
-let submitting=false;
+  let selectedDay = getTokyoWeekdayLabel();
+  if(selectedDay === "日") selectedDay = "月";
 
-/* =====================
-   受講数照会
-===================== */
+  let submitting = false;
 
-document.getElementById("remainBtn").onclick = async () => {
+  /* =====================
+     受講数照会
+  ===================== */
 
-if(!member){
-alert("会員QRを読み取ってください");
-return;
-}
+  document.getElementById("remainBtn").onclick = async () => {
 
-try{
-function showLoading(){
-  alert("読み込み中...");
-}
+    const currentMember = (window.currentMember || "").trim();
 
-function showCount(data){
-  alert(
-    "会員番号：" + data.member + "\n" +
-    "受講回数：" + data.count + "\n" +
-    "最終受講：" + data.last
-  );
-}
+    if(!currentMember){
+      alert("会員QRを読み取ってください");
+      return;
+    }
 
-const data = await fetchCount(member);
+    try{
+      showLoading();
+      const data = await fetchCount(currentMember);
+      showCount(data);
+    }catch(e){
+      alert("照会エラー");
+      console.log("remainBtn error", e);
+    }
+  };
 
+  /* =====================
+     受付処理
+  ===================== */
 
-}catch(e){
+  async function submit(className){
 
-alert("照会エラー");
+    if(submitting) return;
+    submitting = true;
 
-}
+    const currentMember = (window.currentMember || "").trim();
 
-};
+    if(!currentMember){
+      alert("会員QRを読み取ってください（memberが取得できません）");
+      submitting = false;
+      return;
+    }
 
+    const url =
+      APP_CONFIG.FORM_RESPONSE +
+      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
+      "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-/* =====================
-   受付処理
-===================== */
+    try{
+      await fetch(url, { method:"POST", mode:"no-cors" });
+    }catch(e){
+      console.log("submit fetch error", e);
+    }
 
-async function submit(className){
+    const complete = document.getElementById("complete");
+    const completeDetail = document.getElementById("completeDetail");
 
-if(submitting) return;
-submitting=true;
+    completeDetail.innerHTML =
+      "<span class='complete-title'>✅ 受付完了</span><br><br>" +
+      "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
+      "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
+      "<span>次の会員を読み取ってください</span>";
 
-const member = window.currentMember;
+    complete.style.display = "flex";
 
-// ★ 二重チェック
-const isDup = await checkDuplicate(member, className);
-
-if(isDup){
-  submitting=false;
-
-  if(!confirm("⚠️ すでに受付済みです\nそれでも登録しますか？")){
-    return;
+    setTimeout(() => {
+      try{
+        if(typeof liff !== "undefined" && liff.isInClient()){
+          liff.closeWindow();
+        }else{
+          complete.style.display = "none";
+          submitting = false;
+        }
+      }catch(e){
+        complete.style.display = "none";
+        submitting = false;
+      }
+    }, 1200);
   }
-}
 
-if(!member){
-alert("会員QRを読み取ってください（memberが取得できません）");
-submitting=false;
-return;
-}
+  /* =====================
+     クラス描画
+  ===================== */
 
-const url =
-APP_CONFIG.FORM_RESPONSE +
-"?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
-"&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
+  function renderAll(){
 
-fetch(url,{method:"POST",mode:"no-cors"});
+    renderDayButtons({
+      dayButtonsEl: dayButtons,
+      selectedDay,
+      onSelect: (day) => {
+        selectedDay = day;
+        renderAll();
+      }
+    });
 
-const complete=document.getElementById("complete");
-const completeDetail=document.getElementById("completeDetail");
+    renderClasses({
+      day: selectedDay,
+      titleEl: title,
+      containerEl: container,
+      onSubmit: submit
+    });
+  }
 
-completeDetail.innerHTML=
-"<span class='complete-title'>✅ 受付完了</span><br><br>"+
-"会員番号：<b>"+escapeHtml(member)+"</b><br>"+
-"クラス：<b>"+escapeHtml(className)+"</b><br><br>"+
-"<span>次の会員を読み取ってください</span>";
-
-complete.style.display="flex";
-
-setTimeout(()=>liff.closeWindow(),1200);
-
-}
-
-
-/* =====================
-   クラス描画
-===================== */
-
-function renderAll(){
-
-renderDayButtons({
-dayButtonsEl:dayButtons,
-selectedDay,
-onSelect:(day)=>{
-selectedDay=day;
-renderAll();
-}
-});
-
-renderClasses({
-day:selectedDay,
-titleEl:title,
-containerEl:container,
-onSubmit:submit
-});
-
-}
-
-renderAll();
+  renderAll();
 
 })();
-
 </script>
 </body>
 </html>

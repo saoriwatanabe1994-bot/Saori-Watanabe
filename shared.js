@@ -118,11 +118,9 @@
   member = String(member).split("?")[0].trim();
 
   const ym = new Date().toISOString().slice(0,7);
-  const key = member + "_" + ym;
 
   const url =
-    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&tq=" +
-    encodeURIComponent("select C,D where E='" + key + "'");
+    "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678";
 
   try{
 
@@ -138,26 +136,45 @@
 
     const rows = json.table?.rows || [];
 
-    if(rows.length > 0){
+    // 👇 フィルタ
+    const filtered = rows.filter(r => {
+      const m = String(r.c[0]?.v || "").trim();   // 会員番号
+      const date = String(r.c[1]?.v || "");       // 日付
+      return m === member && date.startsWith(ym);
+    });
 
-      const count = rows[0].c[0]?.v || 0;
+    // 👇 合算
+    let count = 0;
+    let lastDateObj = null;
 
-      let last = "";
+    filtered.forEach(r => {
 
-      if(rows[0].c[1]?.f){
-        const f = rows[0].c[1].f;
-        const parts = f.split(" ")[0].split("/");
-        last = Number(parts[1]) + "/" + Number(parts[2]);
+      count += Number(r.c[2]?.v || 0);
+
+      const raw = r.c[3]?.v; // 日時
+      if(raw){
+        const d = new Date(raw);
+        if(!lastDateObj || d > lastDateObj){
+          lastDateObj = d;
+        }
       }
 
-      return { member, count, last };
+    });
+
+    let last = "";
+    if(lastDateObj){
+      last =
+        (lastDateObj.getMonth()+1) + "/" +
+        lastDateObj.getDate();
     }
 
+    return { member, count, last };
+
   }catch(e){
-    console.log(e);
+    alert("照会エラー");
+    return { member, count:0, last:"" };
   }
 
-  return { member, count:0, last:"" };
 };
   // ===== 二重受付チェック =====
   window.checkDuplicate = async function(member, className){

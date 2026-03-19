@@ -113,16 +113,11 @@
   };
 
   // ===== 受講数取得 =====
-  // ===== 受講数取得 =====
-window.fetchCount = async function(member){
+  window.fetchCount = async function(member){
 
-  // 文字列化（安全対策）
-  member = String(member);
+  member = String(member).split("?")[0].trim();
 
-  // 今月（YYYY-MM）
   const ym = new Date().toISOString().slice(0,7);
-
-  // KEY生成
   const key = member + "_" + ym;
 
   const url =
@@ -134,15 +129,14 @@ window.fetchCount = async function(member){
     const res = await fetch(url);
     const text = await res.text();
 
-    // gviz → JSON変換
     const json = JSON.parse(
-      text
-        .replace("/*O_o*/","")
-        .replace("google.visualization.Query.setResponse(","")
-        .slice(0,-2)
+      text.substring(
+        text.indexOf("{"),
+        text.lastIndexOf("}") + 1
+      )
     );
 
-    const rows = json.table.rows;
+    const rows = json.table?.rows || [];
 
     if(rows.length > 0){
 
@@ -151,34 +145,19 @@ window.fetchCount = async function(member){
       let last = "";
 
       if(rows[0].c[1]?.f){
-
-        // "2026/02/23 16:54:19" → "2/23"
         const f = rows[0].c[1].f;
         const parts = f.split(" ")[0].split("/");
-
         last = Number(parts[1]) + "/" + Number(parts[2]);
-
       }
 
-      return {
-        member: member,
-        count: count,
-        last: last
-      };
-
+      return { member, count, last };
     }
 
   }catch(e){
     console.log(e);
   }
 
-  // データなし or エラー
-  return {
-    member: member,
-    count: 0,
-    last: ""
-  };
-
+  return { member, count:0, last:"" };
 };
   // ===== 二重受付チェック =====
   window.checkDuplicate = async function(member, className){

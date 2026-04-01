@@ -61,7 +61,7 @@
     });
   };
 
-  // ===== クラス描画 =====
+  // ===== クラス描画（複数選択対応） =====
   window.renderClasses = function({ day, titleEl, containerEl, onSubmit }){
 
     titleEl.textContent =
@@ -72,6 +72,52 @@
     containerEl.innerHTML = "";
 
     const list = window.CLASSES_BY_DAY[day] || [];
+    const selectedClasses = [];
+
+    const selectedBox = document.createElement("div");
+    selectedBox.style.fontSize = "24px";
+    selectedBox.style.margin = "12px 0 20px";
+    selectedBox.style.lineHeight = "1.6";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.textContent = "選択したクラスを確認";
+    confirmBtn.className = "remain-btn";
+    confirmBtn.style.display = "none";
+
+    function refreshSelectedView(){
+      if(selectedClasses.length === 0){
+        selectedBox.innerHTML = "";
+        confirmBtn.style.display = "none";
+        return;
+      }
+
+      selectedBox.innerHTML =
+        "<b>選択中：</b><br>" +
+        selectedClasses.map(c => "・" + window.escapeHtml(c)).join("<br>");
+
+      confirmBtn.style.display = "block";
+    }
+
+    function toggleClass(btn, cls){
+      const idx = selectedClasses.indexOf(cls);
+
+      if(idx >= 0){
+        selectedClasses.splice(idx, 1);
+        btn.style.opacity = "1";
+        btn.style.background = "";
+        btn.style.color = "";
+        btn.style.fontWeight = "";
+      }else{
+        selectedClasses.push(cls);
+        btn.style.opacity = "1";
+        btn.style.background = "#66adff";
+        btn.style.color = "#fff";
+        btn.style.fontWeight = "bold";
+      }
+
+      refreshSelectedView();
+    }
 
     list.forEach((cls) => {
       const btn = document.createElement("button");
@@ -79,26 +125,57 @@
       btn.textContent = `受付 ▶ ${cls}`;
       btn.className = "class-btn";
 
-      btn.onclick = async () => {
-        const member = (window.currentMember || "").toString().trim();
-
-        if(!member){
-          alert("会員番号が取得できていません");
-          return;
-        }
-
-        const isDup = await window.checkDuplicate(member, cls);
-
-        if(isDup){
-          const ok = confirm("⚠️ すでに受付済みです\n\n続行しますか？");
-          if(!ok) return;
-        }
-
-        onSubmit(cls);
+      btn.onclick = () => {
+        toggleClass(btn, cls);
       };
 
       containerEl.appendChild(btn);
     });
+
+    containerEl.appendChild(selectedBox);
+    containerEl.appendChild(confirmBtn);
+
+    confirmBtn.onclick = async () => {
+      const member = (window.currentMember || "").toString().trim();
+
+      if(!member){
+        alert("会員番号が取得できていません");
+        return;
+      }
+
+      if(selectedClasses.length === 0){
+        alert("クラスを選択してください");
+        return;
+      }
+
+      const duplicateClasses = [];
+      const normalClasses = [];
+
+      for(const cls of selectedClasses){
+        const isDup = await window.checkDuplicate(member, cls);
+        if(isDup){
+          duplicateClasses.push(cls);
+        }else{
+          normalClasses.push(cls);
+        }
+      }
+
+      let message =
+        "以下の内容で受付しますか？\n\n" +
+        "会員番号：" + member + "\n\n" +
+        selectedClasses.map(c => "・" + c).join("\n");
+
+      if(duplicateClasses.length > 0){
+        message +=
+          "\n\n⚠️ すでに受付済みの可能性あり\n" +
+          duplicateClasses.map(c => "・" + c).join("\n");
+      }
+
+      const ok = confirm(message);
+      if(!ok) return;
+
+      onSubmit(selectedClasses.slice());
+    };
   };
 
   // ===== LIFF初期化 =====

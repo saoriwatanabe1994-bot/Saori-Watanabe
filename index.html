@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js?v=20260319-5"></script>
+<script src="shared.js?v=20260319-6"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -147,7 +147,6 @@ display:block;
   if(selectedDay === "日") selectedDay = "月";
 
   let submitting = false;
-
   const cleanBaseUrl = location.origin + location.pathname;
 
   /* =====================
@@ -224,10 +223,10 @@ display:block;
   };
 
   /* =====================
-     受付処理
+     受付処理（複数対応）
   ===================== */
 
-  async function submit(className){
+  async function submit(classNames){
 
     if(submitting) return;
     submitting = true;
@@ -240,33 +239,25 @@ display:block;
       return;
     }
 
-    const isDup = await checkDuplicate(currentMember, className);
+    const classes = Array.isArray(classNames) ? classNames : [classNames];
 
-    if(isDup){
-      submitting = false;
+    for(const className of classes){
+      const url =
+        APP_CONFIG.FORM_RESPONSE +
+        "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
+        "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-      if(!confirm("⚠️ すでに受付済みです\n\n続行しますか？")){
-        return;
+      try{
+        await fetch(url, { method:"POST", mode:"no-cors" });
+      }catch(e){
+        console.log("submit fetch error", e);
       }
-
-      submitting = true;
-    }
-
-    const url =
-      APP_CONFIG.FORM_RESPONSE +
-      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
-      "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
-
-    try{
-      await fetch(url, { method:"POST", mode:"no-cors" });
-    }catch(e){
-      console.log("submit fetch error", e);
     }
 
     completeDetail.innerHTML =
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
       "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
-      "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
+      "クラス：<b>" + classes.map(c => escapeHtml(c)).join("<br>") + "</b><br><br>" +
       "<span>次の会員を読み取ります…</span>";
 
     complete.style.display = "flex";

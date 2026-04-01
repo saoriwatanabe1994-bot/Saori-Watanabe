@@ -1,238 +1,252 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>受付（手入力）</title>
-  
-  <script src="./shared.js"></script>
+<meta charset="UTF-8" />
+<title>受付（手入力）</title>
 
-  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="./shared.js?v=20260319-9"></script>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-  <style>
-    body { font-family: sans-serif; padding: 12px; }
+<style>
+body { font-family: sans-serif; padding: 12px; }
 
-    /* 入力 */
-    .input-box { margin: 10px 0 14px; }
-    input[type="text"]{
-      font-size: 22px;
-      padding: 14px;
-      width: 100%;
-      box-sizing: border-box;
-    }
+/* 入力 */
+.input-box { margin: 10px 0 14px; }
+input[type="text"]{
+  font-size: 28px;
+  padding: 18px;
+  width: 100%;
+  box-sizing: border-box;
+}
 
-
-    /* 曜日ボタン（小さめ） */
-    .day-btn {
+/* 曜日 */
+.day-btn {
   font-size: 24px;
   padding: 14px 20px;
   margin: 6px 4px;
   opacity: 0.6;
 }
-    .day-btn.today {
-      opacity: 1;
-      background: #66adff;
-      color: #fff;
-      font-weight: bold;
-    }
+.day-btn.today {
+  opacity: 1;
+  background: #66adff;
+  color: #fff;
+  font-weight: bold;
+}
 
-    /* クラスボタン（大きめ・縦） */
-   .class-btn {
-  font-size: 32px;
-  padding: 60px 28px;
+/* クラスボタン（indexと統一） */
+.class-btn {
+  font-size: 42px;
+  padding: 70px 28px;
   margin: 18px 0;
   width: 100%;
   text-align: left;
+  font-weight: 700;
+  line-height: 1.4;
+  border-radius: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
-    /* 受付完了オーバーレイ */
-    #complete {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.65);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-    #completeBox {
-      background: #fff;
-      padding: 44px 34px;
-      border-radius: 18px;
-      text-align: center;
-      width: 90%;
-      max-width: 420px;
-    }
-    #completeBox .done {
-      font-size: 38px;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-    #completeBox .detail {
-      font-size: 18px;
-      line-height: 1.5;
-      word-break: break-word;
-    }
+/* 完了 */
+#complete {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+#completeBox {
+  background: #fff;
+  padding: 44px 34px;
+  border-radius: 18px;
+  text-align: center;
+  width: 92%;
+  max-width: 560px;
+}
+#completeBox .done {
+  font-size: 44px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+#completeBox .detail {
+  font-size: 24px;
+  line-height: 1.6;
+}
 
-    /* 画面セクション */
-    .section { display: none; }
-    .section.active { display: block; }
-  </style>
+/* セクション */
+.section { display: none; }
+.section.active { display: block; }
+</style>
 </head>
 
 <body>
-  <h2 id="title">会員番号を入力してください</h2>
 
-  <!-- ① 会員番号入力画面 -->
-  <div id="sectionInput" class="section active">
-    <div class="input-box">
-      <input
-  id="memberInput"
-  type="text"
-  placeholder="会員番号（数字のみ）"
-/>
-    </div>
-    <button id="goBtn" class="class-btn" style="text-align:center;">次へ（クラス選択）</button>
-  </div>
+<h2 id="title">会員番号を入力してください</h2>
 
-  <!-- ② クラス選択画面 -->
-  <div id="sectionSelect" class="section">
-    <div id="dayButtons"></div>
-    <div id="container"></div>
-    <button id="backBtn" class="day-btn" style="margin-top:10px;">← 会員番号入力に戻る</button>
+<!-- 入力 -->
+<div id="sectionInput" class="section active">
+  <div class="input-box">
+    <input id="memberInput" type="text" placeholder="会員番号（数字のみ）"/>
   </div>
+  <button id="goBtn" class="class-btn" style="text-align:center;">
+    次へ（クラス選択）
+  </button>
+</div>
 
-  <!-- 完了オーバーレイ -->
-  <div id="complete">
-    <div id="completeBox">
-      <div class="done">✅ 受付完了</div>
-      <div class="detail" id="completeDetail"></div>
-    </div>
+<!-- クラス -->
+<div id="sectionSelect" class="section">
+  <div id="dayButtons"></div>
+  <div id="container"></div>
+  <button id="backBtn" class="day-btn" style="margin-top:10px;">
+    ← 会員番号入力に戻る
+  </button>
+</div>
+
+<!-- 完了 -->
+<div id="complete">
+  <div id="completeBox">
+    <div class="done">✅ 受付完了</div>
+    <div class="detail" id="completeDetail"></div>
   </div>
+</div>
+
 <script>
-  // 要素
-  const title = document.getElementById("title");
-  const memberInput = document.getElementById("memberInput");
-  const goBtn = document.getElementById("goBtn");
-  const backBtn = document.getElementById("backBtn");
-  const dayButtons = document.getElementById("dayButtons");
-  const container = document.getElementById("container");
-  const complete = document.getElementById("complete");
-  const completeDetail = document.getElementById("completeDetail");
-  const sectionInput = document.getElementById("sectionInput");
-  const sectionSelect = document.getElementById("sectionSelect");
+const title = document.getElementById("title");
+const memberInput = document.getElementById("memberInput");
+const goBtn = document.getElementById("goBtn");
+const backBtn = document.getElementById("backBtn");
+const dayButtons = document.getElementById("dayButtons");
+const container = document.getElementById("container");
+const complete = document.getElementById("complete");
+const completeDetail = document.getElementById("completeDetail");
+const sectionInput = document.getElementById("sectionInput");
+const sectionSelect = document.getElementById("sectionSelect");
 
-  let currentMember = "";
-  let submitting = false;
-  let selectedDay = "";
+let currentMember = "";
+let submitting = false;
+let selectedDay = "";
 
-  // 全角→半角など
-  memberInput.addEventListener("input", () => {
-    let v = memberInput.value;
-    v = v.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-    v = v.toUpperCase();
-    v = v.replace(/[^A-Z0-9-]/g, "");
-    memberInput.value = v;
-  });
- // Enterで次へ
+/* 入力整形 */
+memberInput.addEventListener("input", () => {
+  let v = memberInput.value;
+  v = v.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+  v = v.replace(/[^\d]/g, "");
+  memberInput.value = v;
+});
+
 memberInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
-    e.preventDefault();   // フォーム送信防止
+    e.preventDefault();
     goBtn.click();
   }
 });
-  function showInputScreen() {
-    sectionSelect.classList.remove("active");
-    sectionInput.classList.add("active");
-    title.textContent = "会員番号を入力してください";
-    currentMember = "";
-    submitting = false;
-    memberInput.value = "";
-    setTimeout(() => memberInput.focus(), 50);
-  }
 
-  function showSelectScreen() {
-    sectionInput.classList.remove("active");
-    sectionSelect.classList.add("active");
-
-    // 初回だけ「今日」
-    if (!selectedDay) {
-      selectedDay = getTokyoWeekdayLabel();
-      if (selectedDay === "日") selectedDay = "土"; // 日曜ボタン無しなら保険
-    }
-
-    renderAll();
-  }
-
-  async function submit(className){
-
-if(submitting) return;
-submitting=true;
-
-const member = window.currentMember;
-
-// ★ 二重チェック
-const isDup = await checkDuplicate(member, className);
-
-if(isDup){
-  submitting=false;
-
-  if(!confirm("⚠️ 同一日の同一クラス受付があります\nそれでも登録しますか？")){
-    return;
-  }
+/* 画面切替 */
+function showInputScreen() {
+  sectionSelect.classList.remove("active");
+  sectionInput.classList.add("active");
+  title.textContent = "会員番号を入力してください";
+  currentMember = "";
+  submitting = false;
+  memberInput.value = "";
+  setTimeout(() => memberInput.focus(), 50);
 }
+
+function showSelectScreen() {
+  sectionInput.classList.remove("active");
+  sectionSelect.classList.add("active");
+
+  if (!selectedDay) {
+    selectedDay = getTokyoWeekdayLabel();
+    if (selectedDay === "日") selectedDay = "土";
+  }
+
+  renderAll();
+}
+
+/* 受付（複数対応） */
+async function submit(classNames){
+
+  if(submitting) return;
+  submitting = true;
+
+  const member = normalizeMember(window.currentMember);
+
+  const classes = Array.isArray(classNames) ? classNames : [classNames];
+
+  for(const className of classes){
+
+    const isDup = await checkDuplicate(member, className);
+
+    if(isDup){
+      const ok = confirm("⚠️ 同一日の同一クラス受付があります\n続行しますか？");
+      if(!ok){
+        submitting = false;
+        return;
+      }
+    }
 
     const url =
       APP_CONFIG.FORM_RESPONSE +
-      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
+      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
       "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-    fetch(url, { method: "POST", mode: "no-cors" });
-
-    completeDetail.innerHTML =
-      "会員番号：<b>" + window.escapeHtml(currentMember) + "</b><br>" +
-"クラス：<b>" + window.escapeHtml(className) + "</b><br><br>" +
-      "次の会員を入力してください";
-
-    complete.style.display = "flex";
-
-    setTimeout(() => {
-      complete.style.display = "none";
-      showInputScreen();
-    }, 1200);
+    await fetch(url, { method: "POST", mode: "no-cors" });
   }
 
-  function renderAll() {
-    renderDayButtons({
-      dayButtonsEl: dayButtons,
-      selectedDay,
-      onSelect: (day) => {
-        selectedDay = day;
-        renderAll();
-      },
-    });
+  completeDetail.innerHTML =
+    "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
+    "クラス：<b>" + classes.join("<br>") + "</b><br><br>" +
+    "次の会員を入力してください";
 
-    renderClasses({
-      day: selectedDay,
-      titleEl: title,
-      containerEl: container,
-      onSubmit: submit,
-    });
-  }
+  complete.style.display = "flex";
 
-  goBtn.onclick = () => {
-    const v = memberInput.value.trim();
-    if (!v) return alert("会員番号を入力してください");
-    currentMember = v;
-    window.currentMember = currentMember;
-    showSelectScreen();
-  };
-
-  backBtn.onclick = () => showInputScreen();
-
-  (async () => {
-    await initLiffSafe();
+  setTimeout(() => {
+    complete.style.display = "none";
     showInputScreen();
-  })();
+  }, 1200);
+}
+
+/* 描画 */
+function renderAll(){
+
+  renderDayButtons({
+    dayButtonsEl: dayButtons,
+    selectedDay,
+    onSelect: (day) => {
+      selectedDay = day;
+      renderAll();
+    }
+  });
+
+  renderClasses({
+    day: selectedDay,
+    titleEl: title,
+    containerEl: container,
+    onSubmit: submit
+  });
+}
+
+/* ボタン */
+goBtn.onclick = () => {
+  const v = normalizeMember(memberInput.value);
+
+  if (!v) return alert("会員番号を入力してください");
+
+  currentMember = v;
+  window.currentMember = v;
+
+  showSelectScreen();
+};
+
+backBtn.onclick = () => showInputScreen();
+
+/* 初期化 */
+(async () => {
+  await initLiffSafe();
+  showInputScreen();
+})();
 </script>
 
 </body>

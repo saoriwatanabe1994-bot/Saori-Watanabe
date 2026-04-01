@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js?v=20260319-7"></script>
+<script src="shared.js?v=20260319-8"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -150,7 +150,7 @@ display:block;
   const cleanBaseUrl = location.origin + location.pathname;
 
   /* =====================
-     QR再読取
+     QR再読取（←ここ重要修正）
   ===================== */
 
   window.openScanner = function(){
@@ -165,6 +165,9 @@ display:block;
               if(scannedMember){
                 scannedMember = normalizeMember(scannedMember);
                 window.currentMember = scannedMember;
+
+                // ★ ここが今回の修正ポイント
+                renderAll(); // ← 選択状態リセット
 
                 completeDetail.innerHTML =
                   "<span class='complete-title'>✅ 読み取り完了</span><br><br>" +
@@ -186,15 +189,6 @@ display:block;
           console.log("scan error", err);
         });
     }else{
-      try{
-        if(window.history.length > 1){
-          history.back();
-          return;
-        }
-      }catch(e){
-        console.log("history back error", e);
-      }
-
       location.replace(cleanBaseUrl);
     }
   };
@@ -223,7 +217,7 @@ display:block;
   };
 
   /* =====================
-     受付処理（複数対応）
+     受付処理
   ===================== */
 
   async function submit(classNames){

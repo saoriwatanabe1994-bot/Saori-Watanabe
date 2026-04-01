@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js?v=20260319-6"></script>
+<script src="shared.js?v=20260319-7"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -110,7 +110,7 @@ display:block;
   member = params.get("member");
 
   if(member){
-    member = decodeURIComponent(member).split("?")[0].trim();
+    member = normalizeMember(member);
   }
 
   if(!member){
@@ -118,7 +118,7 @@ display:block;
     member = url.searchParams.get("member");
 
     if(member){
-      member = decodeURIComponent(member).split("?")[0].trim();
+      member = normalizeMember(member);
     }
   }
 
@@ -127,7 +127,7 @@ display:block;
       if(liff.isInClient()){
         const ctx = liff.getContext();
         if(ctx && ctx.queryParams && ctx.queryParams.member){
-          member = String(ctx.queryParams.member).split("?")[0].trim();
+          member = normalizeMember(ctx.queryParams.member);
         }
       }
     }catch(e){
@@ -135,7 +135,7 @@ display:block;
     }
   }
 
-  window.currentMember = member || "";
+  window.currentMember = normalizeMember(member || "");
 
   const title = document.getElementById("title");
   const container = document.getElementById("container");
@@ -163,7 +163,7 @@ display:block;
               let scannedMember = scannedUrl.searchParams.get("member");
 
               if(scannedMember){
-                scannedMember = decodeURIComponent(scannedMember).split("?")[0].trim();
+                scannedMember = normalizeMember(scannedMember);
                 window.currentMember = scannedMember;
 
                 completeDetail.innerHTML =
@@ -205,7 +205,7 @@ display:block;
 
   document.getElementById("remainBtn").onclick = async () => {
 
-    const currentMember = (window.currentMember || "").trim();
+    const currentMember = normalizeMember(window.currentMember);
 
     if(!currentMember){
       alert("会員QRを読み取ってください");
@@ -231,7 +231,7 @@ display:block;
     if(submitting) return;
     submitting = true;
 
-    const currentMember = (window.currentMember || "").trim();
+    const currentMember = normalizeMember(window.currentMember);
 
     if(!currentMember){
       alert("会員QRを読み取ってください");

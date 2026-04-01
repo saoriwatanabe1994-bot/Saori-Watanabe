@@ -112,9 +112,9 @@
       let html =
         "<div style='font-size:44px;font-weight:800;margin-bottom:18px;'>受付確認</div>" +
         "会員番号：<b style='font-size:38px;'>" + window.escapeHtml(member) + "</b><br><br>" +
-        "<div style='font-size:24px;text-align:left;display:inline-block;'>" +
-        selectedClasses.map(c => "・" + window.escapeHtml(c)).join("<br>") +
-        "</div>";
+       "<div style='font-size:34px;font-weight:700;text-align:left;display:inline-block;line-height:1.5;'>" +
+selectedClasses.map(c => "・" + window.escapeHtml(c)).join("<br>") +
+"</div>";
 
       if(duplicateClasses.length > 0){
         html +=

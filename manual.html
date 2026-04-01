@@ -166,48 +166,13 @@ function showSelectScreen() {
 }
 
 /* 受付（複数対応） */
-async function submit(classNames){
-
-  if(submitting) return;
-  submitting = true;
-
-  const member = normalizeMember(window.currentMember);
-
-  const classes = Array.isArray(classNames) ? classNames : [classNames];
-
-  for(const className of classes){
-
-    const isDup = await checkDuplicate(member, className);
-
-    if(isDup){
-      const ok = confirm("⚠️ 同一日の同一クラス受付があります\n続行しますか？");
-      if(!ok){
-        submitting = false;
-        return;
-      }
-    }
-
-    const url =
-      APP_CONFIG.FORM_RESPONSE +
-      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
-      "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
-
-    await fetch(url, { method: "POST", mode: "no-cors" });
-  }
-
-  completeDetail.innerHTML =
-    "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
-    "クラス：<b>" + classes.join("<br>") + "</b><br><br>" +
-    "次の会員を入力してください";
-
-  complete.style.display = "flex";
-
-  setTimeout(() => {
-    complete.style.display = "none";
-    showInputScreen();
-  }, 1200);
+.class-btn{
+font-size:32px;
+padding:60px 28px;
+margin:18px 0;
+width:100%;
+text-align:left;
 }
-
 /* 描画 */
 function renderAll(){
 

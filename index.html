@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js?v=20260319-1"></script>
+<script src="shared.js?v=20260319-2"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -79,6 +79,17 @@ font-size:48px;
 font-weight:800;
 display:block;
 }
+
+.scan-btn{
+font-size:30px;
+padding:24px;
+margin-top:20px;
+background:#66adff;
+color:#fff;
+border:none;
+border-radius:12px;
+width:100%;
+}
 </style>
 </head>
 
@@ -113,7 +124,6 @@ display:block;
     member = decodeURIComponent(member).split("?")[0].trim();
   }
 
-  // LIFFでURLが消えた場合
   if(!member){
     const url = new URL(location.href);
     member = url.searchParams.get("member");
@@ -123,7 +133,6 @@ display:block;
     }
   }
 
-  // それでも無ければcontextから取得
   if(!member && typeof liff !== "undefined"){
     try{
       if(liff.isInClient()){
@@ -167,7 +176,26 @@ display:block;
       showCount(data);
     }catch(e){
       alert("照会エラー");
-      console.log("remainBtn error", e);
+    }
+  };
+
+  /* =====================
+     スキャナー起動
+  ===================== */
+
+  window.openScanner = function(){
+    if(typeof liff !== "undefined" && liff.isInClient()){
+      liff.scanCodeV2()
+        .then(result => {
+          if(result && result.value){
+            location.href = result.value;
+          }
+        })
+        .catch(err => {
+          console.log("scan error", err);
+        });
+    }else{
+      alert("LINE内で開いてください");
     }
   };
 
@@ -183,7 +211,7 @@ display:block;
     const currentMember = (window.currentMember || "").trim();
 
     if(!currentMember){
-      alert("会員QRを読み取ってください（memberが取得できません）");
+      alert("会員QRを読み取ってください");
       submitting = false;
       return;
     }
@@ -193,11 +221,7 @@ display:block;
       "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
       "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-    try{
-      await fetch(url, { method:"POST", mode:"no-cors" });
-    }catch(e){
-      console.log("submit fetch error", e);
-    }
+    await fetch(url,{method:"POST",mode:"no-cors"});
 
     const complete = document.getElementById("complete");
     const completeDetail = document.getElementById("completeDetail");
@@ -206,23 +230,15 @@ display:block;
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
       "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
       "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
-      "<span>次の会員を読み取ってください</span>";
+      "<button class='scan-btn' onclick='openScanner()'>📷 次を読み取る</button>";
 
     complete.style.display = "flex";
 
+    // 👇 自動で次スキャン（1秒後）
     setTimeout(() => {
-      try{
-        if(typeof liff !== "undefined" && liff.isInClient()){
-          liff.closeWindow();
-        }else{
-          complete.style.display = "none";
-          submitting = false;
-        }
-      }catch(e){
-        complete.style.display = "none";
-        submitting = false;
-      }
-    }, 1200);
+      openScanner();
+      submitting = false;
+    }, 1000);
   }
 
   /* =====================

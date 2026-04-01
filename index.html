@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js?v=20260319-2"></script>
+<script src="shared.js?v=20260319-3"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -151,11 +151,56 @@ width:100%;
   const title = document.getElementById("title");
   const container = document.getElementById("container");
   const dayButtons = document.getElementById("dayButtons");
+  const complete = document.getElementById("complete");
+  const completeDetail = document.getElementById("completeDetail");
 
   let selectedDay = getTokyoWeekdayLabel();
   if(selectedDay === "日") selectedDay = "月";
 
   let submitting = false;
+
+  /* =====================
+     QR再読取
+  ===================== */
+
+  window.openScanner = function(){
+    if(typeof liff === "undefined" || !liff.isInClient()){
+      alert("LINE内で開いてください");
+      return;
+    }
+
+    liff.scanCodeV2()
+      .then(result => {
+        if(!result || !result.value) return;
+
+        try{
+          const scannedUrl = new URL(result.value);
+          let scannedMember = scannedUrl.searchParams.get("member");
+
+          if(scannedMember){
+            scannedMember = decodeURIComponent(scannedMember).split("?")[0].trim();
+            window.currentMember = scannedMember;
+
+            completeDetail.innerHTML =
+              "<span class='complete-title'>✅ 読み取り完了</span><br><br>" +
+              "会員番号：<b>" + escapeHtml(scannedMember) + "</b><br><br>" +
+              "<span>クラスを選択してください</span>";
+
+            complete.style.display = "flex";
+
+            setTimeout(() => {
+              complete.style.display = "none";
+            }, 900);
+          }
+
+        }catch(e){
+          console.log("scan parse error", e);
+        }
+      })
+      .catch(err => {
+        console.log("scan error", err);
+      });
+  };
 
   /* =====================
      受講数照会
@@ -176,26 +221,7 @@ width:100%;
       showCount(data);
     }catch(e){
       alert("照会エラー");
-    }
-  };
-
-  /* =====================
-     スキャナー起動
-  ===================== */
-
-  window.openScanner = function(){
-    if(typeof liff !== "undefined" && liff.isInClient()){
-      liff.scanCodeV2()
-        .then(result => {
-          if(result && result.value){
-            location.href = result.value;
-          }
-        })
-        .catch(err => {
-          console.log("scan error", err);
-        });
-    }else{
-      alert("LINE内で開いてください");
+      console.log("remainBtn error", e);
     }
   };
 
@@ -216,15 +242,28 @@ width:100%;
       return;
     }
 
+    const isDup = await checkDuplicate(currentMember, className);
+
+    if(isDup){
+      submitting = false;
+
+      if(!confirm("⚠️ すでに受付済みです\n\n続行しますか？")){
+        return;
+      }
+
+      submitting = true;
+    }
+
     const url =
       APP_CONFIG.FORM_RESPONSE +
       "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
       "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-    await fetch(url,{method:"POST",mode:"no-cors"});
-
-    const complete = document.getElementById("complete");
-    const completeDetail = document.getElementById("completeDetail");
+    try{
+      await fetch(url, { method:"POST", mode:"no-cors" });
+    }catch(e){
+      console.log("submit fetch error", e);
+    }
 
     completeDetail.innerHTML =
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
@@ -234,7 +273,6 @@ width:100%;
 
     complete.style.display = "flex";
 
-    // 👇 自動で次スキャン（1秒後）
     setTimeout(() => {
       openScanner();
       submitting = false;

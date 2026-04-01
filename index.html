@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js?v=20260319-3"></script>
+<script src="shared.js?v=20260319-4"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -79,17 +79,6 @@ font-size:48px;
 font-weight:800;
 display:block;
 }
-
-.scan-btn{
-font-size:30px;
-padding:24px;
-margin-top:20px;
-background:#66adff;
-color:#fff;
-border:none;
-border-radius:12px;
-width:100%;
-}
 </style>
 </head>
 
@@ -124,6 +113,7 @@ width:100%;
     member = decodeURIComponent(member).split("?")[0].trim();
   }
 
+  // LIFFでURLが消えた場合
   if(!member){
     const url = new URL(location.href);
     member = url.searchParams.get("member");
@@ -133,6 +123,7 @@ width:100%;
     }
   }
 
+  // それでも無ければcontextから取得
   if(!member && typeof liff !== "undefined"){
     try{
       if(liff.isInClient()){
@@ -159,48 +150,8 @@ width:100%;
 
   let submitting = false;
 
-  /* =====================
-     QR再読取
-  ===================== */
-
-  window.openScanner = function(){
-    if(typeof liff === "undefined" || !liff.isInClient()){
-      alert("LINE内で開いてください");
-      return;
-    }
-
-    liff.scanCodeV2()
-      .then(result => {
-        if(!result || !result.value) return;
-
-        try{
-          const scannedUrl = new URL(result.value);
-          let scannedMember = scannedUrl.searchParams.get("member");
-
-          if(scannedMember){
-            scannedMember = decodeURIComponent(scannedMember).split("?")[0].trim();
-            window.currentMember = scannedMember;
-
-            completeDetail.innerHTML =
-              "<span class='complete-title'>✅ 読み取り完了</span><br><br>" +
-              "会員番号：<b>" + escapeHtml(scannedMember) + "</b><br><br>" +
-              "<span>クラスを選択してください</span>";
-
-            complete.style.display = "flex";
-
-            setTimeout(() => {
-              complete.style.display = "none";
-            }, 900);
-          }
-
-        }catch(e){
-          console.log("scan parse error", e);
-        }
-      })
-      .catch(err => {
-        console.log("scan error", err);
-      });
-  };
+  // memberなしの素URL（戻れない時の退避先）
+  const cleanBaseUrl = location.origin + location.pathname;
 
   /* =====================
      受講数照会
@@ -226,6 +177,32 @@ width:100%;
   };
 
   /* =====================
+     完了後の自動遷移
+  ===================== */
+
+  function moveAfterComplete(){
+    try{
+      if(typeof liff !== "undefined" && liff.isInClient()){
+        liff.closeWindow();
+        return;
+      }
+    }catch(e){
+      console.log("liff close error", e);
+    }
+
+    try{
+      if(window.history.length > 1){
+        history.back();
+        return;
+      }
+    }catch(e){
+      console.log("history back error", e);
+    }
+
+    location.replace(cleanBaseUrl);
+  }
+
+  /* =====================
      受付処理
   ===================== */
 
@@ -237,7 +214,7 @@ width:100%;
     const currentMember = (window.currentMember || "").trim();
 
     if(!currentMember){
-      alert("会員QRを読み取ってください");
+      alert("会員QRを読み取ってください（memberが取得できません）");
       submitting = false;
       return;
     }
@@ -268,14 +245,12 @@ width:100%;
     completeDetail.innerHTML =
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
       "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
-      "クラス：<b>" + escapeHtml(className) + "</b><br><br>" +
-      "<button class='scan-btn' onclick='openScanner()'>📷 次を読み取る</button>";
+      "クラス：<b>" + escapeHtml(className) + "</b>";
 
     complete.style.display = "flex";
 
     setTimeout(() => {
-      openScanner();
-      submitting = false;
+      moveAfterComplete();
     }, 1000);
   }
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <title>受付（手入力）</title>
 
-<script src="./shared.js?v=20260319-12"></script>
+<script src="./shared.js?v=20260319-13"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -76,7 +76,7 @@ input[type="text"]{
 
 <div id="sectionInput" class="section active">
   <div class="input-box">
-    <input id="memberInput" type="text" placeholder="会員番号（数字のみ）"/>
+    <input id="memberInput" type="text" placeholder="会員番号（英数字・-・_ 可）"/>
   </div>
   <button id="goBtn" class="class-btn" style="text-align:center;">
     次へ（クラス選択）
@@ -122,7 +122,8 @@ function normalizeMemberSafe(v){
   }catch(e){}
   return String(v || "")
     .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-    .replace(/[^\d]/g, "")
+    .replace(/[^A-Za-z0-9\-_]/g, "")
+    .toUpperCase()
     .trim();
 }
 
@@ -141,7 +142,16 @@ function escapeHtmlSafe(v){
 }
 
 memberInput.addEventListener("input", () => {
-  memberInput.value = normalizeMemberSafe(memberInput.value);
+  let v = memberInput.value;
+
+  v = v.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s =>
+    String.fromCharCode(s.charCodeAt(0) - 0xFEE0)
+  );
+
+  v = v.replace(/[^A-Za-z0-9\-_]/g, "");
+  v = v.toUpperCase();
+
+  memberInput.value = v;
 });
 
 memberInput.addEventListener("keydown", (e) => {

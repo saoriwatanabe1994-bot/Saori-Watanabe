@@ -4,13 +4,12 @@
 <meta charset="UTF-8" />
 <title>受付（手入力）</title>
 
-<script src="./shared.js?v=20260319-9"></script>
+<script src="./shared.js?v=20260319-10"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
 body { font-family: sans-serif; padding: 12px; }
 
-/* 入力 */
 .input-box { margin: 10px 0 14px; }
 input[type="text"]{
   font-size: 28px;
@@ -19,7 +18,6 @@ input[type="text"]{
   box-sizing: border-box;
 }
 
-/* 曜日 */
 .day-btn {
   font-size: 24px;
   padding: 14px 20px;
@@ -33,20 +31,14 @@ input[type="text"]{
   font-weight: bold;
 }
 
-/* クラスボタン（indexと統一） */
 .class-btn {
-  font-size: 42px;
-  padding: 70px 28px;
+  font-size: 32px;
+  padding: 60px 28px;
   margin: 18px 0;
   width: 100%;
   text-align: left;
-  font-weight: 700;
-  line-height: 1.4;
-  border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
-/* 完了 */
 #complete {
   position: fixed;
   inset: 0;
@@ -74,17 +66,14 @@ input[type="text"]{
   line-height: 1.6;
 }
 
-/* セクション */
 .section { display: none; }
 .section.active { display: block; }
 </style>
 </head>
 
 <body>
-
 <h2 id="title">会員番号を入力してください</h2>
 
-<!-- 入力 -->
 <div id="sectionInput" class="section active">
   <div class="input-box">
     <input id="memberInput" type="text" placeholder="会員番号（数字のみ）"/>
@@ -94,7 +83,6 @@ input[type="text"]{
   </button>
 </div>
 
-<!-- クラス -->
 <div id="sectionSelect" class="section">
   <div id="dayButtons"></div>
   <div id="container"></div>
@@ -103,7 +91,6 @@ input[type="text"]{
   </button>
 </div>
 
-<!-- 完了 -->
 <div id="complete">
   <div id="completeBox">
     <div class="done">✅ 受付完了</div>
@@ -127,12 +114,19 @@ let currentMember = "";
 let submitting = false;
 let selectedDay = "";
 
-/* 入力整形 */
+// normalizeMemberが古いshared.jsで未反映でも止まらない保険
+function normalizeMemberSafe(v){
+  if(typeof normalizeMember === "function"){
+    return normalizeMember(v);
+  }
+  return String(v || "")
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+    .replace(/[^\d]/g, "")
+    .trim();
+}
+
 memberInput.addEventListener("input", () => {
-  let v = memberInput.value;
-  v = v.replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-  v = v.replace(/[^\d]/g, "");
-  memberInput.value = v;
+  memberInput.value = normalizeMemberSafe(memberInput.value);
 });
 
 memberInput.addEventListener("keydown", (e) => {
@@ -142,7 +136,6 @@ memberInput.addEventListener("keydown", (e) => {
   }
 });
 
-/* 画面切替 */
 function showInputScreen() {
   sectionSelect.classList.remove("active");
   sectionInput.classList.add("active");
@@ -165,17 +158,61 @@ function showSelectScreen() {
   renderAll();
 }
 
-/* 受付（複数対応） */
-.class-btn{
-font-size:32px;
-padding:60px 28px;
-margin:18px 0;
-width:100%;
-text-align:left;
-}
-/* 描画 */
-function renderAll(){
+async function submit(classNames){
 
+  if(submitting) return;
+  submitting = true;
+
+  const member = normalizeMemberSafe(window.currentMember);
+  const classes = Array.isArray(classNames) ? classNames : [classNames];
+
+  const duplicateClasses = [];
+
+  for(const className of classes){
+    const isDup = await checkDuplicate(member, className);
+    if(isDup){
+      duplicateClasses.push(className);
+    }
+  }
+
+  const ok = await showSelectionConfirm({
+    member,
+    selectedClasses: classes,
+    duplicateClasses
+  });
+
+  if(!ok){
+    submitting = false;
+    return;
+  }
+
+  for(const className of classes){
+    const url =
+      APP_CONFIG.FORM_RESPONSE +
+      "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
+      "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
+
+    try{
+      await fetch(url, { method: "POST", mode: "no-cors" });
+    }catch(e){
+      console.log("submit fetch error", e);
+    }
+  }
+
+  completeDetail.innerHTML =
+    "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
+    "クラス：<b>" + classes.map(c => escapeHtml(c)).join("<br>") + "</b><br><br>" +
+    "次の会員を入力してください";
+
+  complete.style.display = "flex";
+
+  setTimeout(() => {
+    complete.style.display = "none";
+    showInputScreen();
+  }, 1200);
+}
+
+function renderAll() {
   renderDayButtons({
     dayButtonsEl: dayButtons,
     selectedDay,
@@ -193,26 +230,25 @@ function renderAll(){
   });
 }
 
-/* ボタン */
 goBtn.onclick = () => {
-  const v = normalizeMember(memberInput.value);
+  const v = normalizeMemberSafe(memberInput.value);
 
-  if (!v) return alert("会員番号を入力してください");
+  if (!v) {
+    alert("会員番号を入力してください");
+    return;
+  }
 
   currentMember = v;
   window.currentMember = v;
-
   showSelectScreen();
 };
 
 backBtn.onclick = () => showInputScreen();
 
-/* 初期化 */
 (async () => {
   await initLiffSafe();
   showInputScreen();
 })();
 </script>
-
 </body>
 </html>

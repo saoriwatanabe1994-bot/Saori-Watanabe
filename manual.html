@@ -4,12 +4,13 @@
 <meta charset="UTF-8" />
 <title>受付（手入力）</title>
 
-<script src="./shared.js?v=20260319-10"></script>
+<script src="./shared.js?v=20260319-11"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
 body { font-family: sans-serif; padding: 12px; }
 
+/* 入力 */
 .input-box { margin: 10px 0 14px; }
 input[type="text"]{
   font-size: 28px;
@@ -18,6 +19,7 @@ input[type="text"]{
   box-sizing: border-box;
 }
 
+/* 曜日 */
 .day-btn {
   font-size: 24px;
   padding: 14px 20px;
@@ -31,6 +33,7 @@ input[type="text"]{
   font-weight: bold;
 }
 
+/* クラスボタン */
 .class-btn {
   font-size: 32px;
   padding: 60px 28px;
@@ -39,6 +42,7 @@ input[type="text"]{
   text-align: left;
 }
 
+/* 完了 */
 #complete {
   position: fixed;
   inset: 0;
@@ -66,6 +70,7 @@ input[type="text"]{
   line-height: 1.6;
 }
 
+/* セクション */
 .section { display: none; }
 .section.active { display: block; }
 </style>
@@ -114,17 +119,34 @@ let currentMember = "";
 let submitting = false;
 let selectedDay = "";
 
-// normalizeMemberが古いshared.jsで未反映でも止まらない保険
+/* ===== 保険関数 ===== */
 function normalizeMemberSafe(v){
-  if(typeof normalizeMember === "function"){
-    return normalizeMember(v);
-  }
+  try{
+    if(typeof normalizeMember === "function"){
+      return normalizeMember(v);
+    }
+  }catch(e){}
   return String(v || "")
     .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
     .replace(/[^\d]/g, "")
     .trim();
 }
 
+function escapeHtmlSafe(v){
+  try{
+    if(typeof escapeHtml === "function"){
+      return escapeHtml(v);
+    }
+  }catch(e){}
+  return String(v || "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/* ===== 入力整形 ===== */
 memberInput.addEventListener("input", () => {
   memberInput.value = normalizeMemberSafe(memberInput.value);
 });
@@ -136,6 +158,7 @@ memberInput.addEventListener("keydown", (e) => {
   }
 });
 
+/* ===== 画面切替 ===== */
 function showInputScreen() {
   sectionSelect.classList.remove("active");
   sectionInput.classList.add("active");
@@ -151,13 +174,18 @@ function showSelectScreen() {
   sectionSelect.classList.add("active");
 
   if (!selectedDay) {
-    selectedDay = getTokyoWeekdayLabel();
+    try{
+      selectedDay = getTokyoWeekdayLabel();
+    }catch(e){
+      selectedDay = "月";
+    }
     if (selectedDay === "日") selectedDay = "土";
   }
 
   renderAll();
 }
 
+/* ===== 受付 ===== */
 async function submit(classNames){
 
   if(submitting) return;
@@ -169,17 +197,36 @@ async function submit(classNames){
   const duplicateClasses = [];
 
   for(const className of classes){
-    const isDup = await checkDuplicate(member, className);
-    if(isDup){
-      duplicateClasses.push(className);
-    }
+    try{
+      const isDup = await checkDuplicate(member, className);
+      if(isDup){
+        duplicateClasses.push(className);
+      }
+    }catch(e){}
   }
 
-  const ok = await showSelectionConfirm({
-    member,
-    selectedClasses: classes,
-    duplicateClasses
-  });
+  let ok = true;
+
+  if(typeof showSelectionConfirm === "function"){
+    ok = await showSelectionConfirm({
+      member,
+      selectedClasses: classes,
+      duplicateClasses
+    });
+  }else{
+    let message =
+      "以下の内容で受付しますか？\n\n" +
+      "会員番号：" + member + "\n\n" +
+      classes.map(c => "・" + c).join("\n");
+
+    if(duplicateClasses.length > 0){
+      message +=
+        "\n\n⚠️ すでに受付済みの可能性あり\n" +
+        duplicateClasses.map(c => "・" + c).join("\n");
+    }
+
+    ok = confirm(message);
+  }
 
   if(!ok){
     submitting = false;
@@ -200,8 +247,8 @@ async function submit(classNames){
   }
 
   completeDetail.innerHTML =
-    "会員番号：<b>" + escapeHtml(member) + "</b><br>" +
-    "クラス：<b>" + classes.map(c => escapeHtml(c)).join("<br>") + "</b><br><br>" +
+    "会員番号：<b>" + escapeHtmlSafe(member) + "</b><br>" +
+    "クラス：<b>" + classes.map(c => escapeHtmlSafe(c)).join("<br>") + "</b><br><br>" +
     "次の会員を入力してください";
 
   complete.style.display = "flex";
@@ -212,24 +259,31 @@ async function submit(classNames){
   }, 1200);
 }
 
+/* ===== 描画 ===== */
 function renderAll() {
-  renderDayButtons({
-    dayButtonsEl: dayButtons,
-    selectedDay,
-    onSelect: (day) => {
-      selectedDay = day;
-      renderAll();
-    }
-  });
+  try{
+    renderDayButtons({
+      dayButtonsEl: dayButtons,
+      selectedDay,
+      onSelect: (day) => {
+        selectedDay = day;
+        renderAll();
+      }
+    });
 
-  renderClasses({
-    day: selectedDay,
-    titleEl: title,
-    containerEl: container,
-    onSubmit: submit
-  });
+    renderClasses({
+      day: selectedDay,
+      titleEl: title,
+      containerEl: container,
+      onSubmit: submit
+    });
+  }catch(e){
+    console.log("renderAll error", e);
+    alert("画面表示エラー");
+  }
 }
 
+/* ===== ボタン ===== */
 goBtn.onclick = () => {
   const v = normalizeMemberSafe(memberInput.value);
 
@@ -245,10 +299,14 @@ goBtn.onclick = () => {
 
 backBtn.onclick = () => showInputScreen();
 
+/* ===== 初期化 ===== */
 (async () => {
-  await initLiffSafe();
+  try{
+    await initLiffSafe();
+  }catch(e){}
   showInputScreen();
 })();
 </script>
+
 </body>
 </html>

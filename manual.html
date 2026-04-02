@@ -4,13 +4,12 @@
 <meta charset="UTF-8" />
 <title>受付（手入力）</title>
 
-<script src="./shared.js?v=20260319-11"></script>
+<script src="./shared.js?v=20260319-12"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
 body { font-family: sans-serif; padding: 12px; }
 
-/* 入力 */
 .input-box { margin: 10px 0 14px; }
 input[type="text"]{
   font-size: 28px;
@@ -19,7 +18,6 @@ input[type="text"]{
   box-sizing: border-box;
 }
 
-/* 曜日 */
 .day-btn {
   font-size: 24px;
   padding: 14px 20px;
@@ -33,7 +31,6 @@ input[type="text"]{
   font-weight: bold;
 }
 
-/* クラスボタン */
 .class-btn {
   font-size: 32px;
   padding: 60px 28px;
@@ -42,7 +39,6 @@ input[type="text"]{
   text-align: left;
 }
 
-/* 完了 */
 #complete {
   position: fixed;
   inset: 0;
@@ -70,7 +66,6 @@ input[type="text"]{
   line-height: 1.6;
 }
 
-/* セクション */
 .section { display: none; }
 .section.active { display: block; }
 </style>
@@ -119,7 +114,6 @@ let currentMember = "";
 let submitting = false;
 let selectedDay = "";
 
-/* ===== 保険関数 ===== */
 function normalizeMemberSafe(v){
   try{
     if(typeof normalizeMember === "function"){
@@ -146,7 +140,6 @@ function escapeHtmlSafe(v){
     .replaceAll("'","&#039;");
 }
 
-/* ===== 入力整形 ===== */
 memberInput.addEventListener("input", () => {
   memberInput.value = normalizeMemberSafe(memberInput.value);
 });
@@ -158,7 +151,6 @@ memberInput.addEventListener("keydown", (e) => {
   }
 });
 
-/* ===== 画面切替 ===== */
 function showInputScreen() {
   sectionSelect.classList.remove("active");
   sectionInput.classList.add("active");
@@ -185,7 +177,6 @@ function showSelectScreen() {
   renderAll();
 }
 
-/* ===== 受付 ===== */
 async function submit(classNames){
 
   if(submitting) return;
@@ -193,45 +184,6 @@ async function submit(classNames){
 
   const member = normalizeMemberSafe(window.currentMember);
   const classes = Array.isArray(classNames) ? classNames : [classNames];
-
-  const duplicateClasses = [];
-
-  for(const className of classes){
-    try{
-      const isDup = await checkDuplicate(member, className);
-      if(isDup){
-        duplicateClasses.push(className);
-      }
-    }catch(e){}
-  }
-
-  let ok = true;
-
-  if(typeof showSelectionConfirm === "function"){
-    ok = await showSelectionConfirm({
-      member,
-      selectedClasses: classes,
-      duplicateClasses
-    });
-  }else{
-    let message =
-      "以下の内容で受付しますか？\n\n" +
-      "会員番号：" + member + "\n\n" +
-      classes.map(c => "・" + c).join("\n");
-
-    if(duplicateClasses.length > 0){
-      message +=
-        "\n\n⚠️ すでに受付済みの可能性あり\n" +
-        duplicateClasses.map(c => "・" + c).join("\n");
-    }
-
-    ok = confirm(message);
-  }
-
-  if(!ok){
-    submitting = false;
-    return;
-  }
 
   for(const className of classes){
     const url =
@@ -259,7 +211,6 @@ async function submit(classNames){
   }, 1200);
 }
 
-/* ===== 描画 ===== */
 function renderAll() {
   try{
     renderDayButtons({
@@ -283,7 +234,6 @@ function renderAll() {
   }
 }
 
-/* ===== ボタン ===== */
 goBtn.onclick = () => {
   const v = normalizeMemberSafe(memberInput.value);
 
@@ -299,7 +249,6 @@ goBtn.onclick = () => {
 
 backBtn.onclick = () => showInputScreen();
 
-/* ===== 初期化 ===== */
 (async () => {
   try{
     await initLiffSafe();

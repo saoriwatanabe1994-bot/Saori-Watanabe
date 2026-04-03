@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <title>受付（手入力）</title>
 
-<script src="./shared.js?v=20260319-13"></script>
+<script src="./shared.js?v=20260319-14"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -76,7 +76,7 @@ input[type="text"]{
 
 <div id="sectionInput" class="section active">
   <div class="input-box">
-    <input id="memberInput" type="text" placeholder="会員番号"/>
+    <input id="memberInput" type="text" placeholder="会員番号（英数字・-・_ 可）"/>
   </div>
   <button id="goBtn" class="class-btn" style="text-align:center;">
     次へ（クラス選択）
@@ -195,18 +195,17 @@ async function submit(classNames){
   const member = normalizeMemberSafe(window.currentMember);
   const classes = Array.isArray(classNames) ? classNames : [classNames];
 
-  for(const className of classes){
+  const requests = classes.map(className => {
     const url =
       APP_CONFIG.FORM_RESPONSE +
       "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(member) +
       "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-    try{
-      await fetch(url, { method: "POST", mode: "no-cors" });
-    }catch(e){
-      console.log("submit fetch error", e);
-    }
-  }
+    return fetch(url, { method: "POST", mode: "no-cors" })
+      .catch(e => console.log("submit fetch error", e));
+  });
+
+  await Promise.all(requests);
 
   completeDetail.innerHTML =
     "会員番号：<b>" + escapeHtmlSafe(member) + "</b><br>" +

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>受付</title>
 
-<script src="shared.js?v=20260319-8"></script>
+<script src="shared.js?v=20260319-14"></script>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 <style>
@@ -150,7 +150,7 @@ display:block;
   const cleanBaseUrl = location.origin + location.pathname;
 
   /* =====================
-     QR再読取（←ここ重要修正）
+     QR再読取
   ===================== */
 
   window.openScanner = function(){
@@ -166,8 +166,7 @@ display:block;
                 scannedMember = normalizeMember(scannedMember);
                 window.currentMember = scannedMember;
 
-                // ★ ここが今回の修正ポイント
-                renderAll(); // ← 選択状態リセット
+                renderAll();
 
                 completeDetail.innerHTML =
                   "<span class='complete-title'>✅ 読み取り完了</span><br><br>" +
@@ -198,7 +197,6 @@ display:block;
   ===================== */
 
   document.getElementById("remainBtn").onclick = async () => {
-
     const currentMember = normalizeMember(window.currentMember);
 
     if(!currentMember){
@@ -217,7 +215,7 @@ display:block;
   };
 
   /* =====================
-     受付処理
+     受付処理（複数対応・1クラスずつ送信）
   ===================== */
 
   async function submit(classNames){
@@ -235,18 +233,17 @@ display:block;
 
     const classes = Array.isArray(classNames) ? classNames : [classNames];
 
-    for(const className of classes){
+    const requests = classes.map(className => {
       const url =
         APP_CONFIG.FORM_RESPONSE +
         "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
         "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-      try{
-        await fetch(url, { method:"POST", mode:"no-cors" });
-      }catch(e){
-        console.log("submit fetch error", e);
-      }
-    }
+      return fetch(url, { method:"POST", mode:"no-cors" })
+        .catch(e => console.log("submit fetch error", e));
+    });
+
+    await Promise.all(requests);
 
     completeDetail.innerHTML =
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
@@ -267,7 +264,6 @@ display:block;
   ===================== */
 
   function renderAll(){
-
     renderDayButtons({
       dayButtonsEl: dayButtons,
       selectedDay,

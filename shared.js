@@ -19,7 +19,7 @@
     "木":["SERINAキッズ","SERINA初中級","Shogo","RIN","心","K×G瀬戸"],
     "金":["manaキッズ","mana初級","KANAMI","RYUYA","SAMURAI"],
     "土":["幼児","nikoキッズ","SAORI","TAKUEI","愛梨","MAHIRO初級","MAHIRO中級"],
-     "WS":["WS_4/4manafreejazz","WS_4/11Cocona練習会","WS_4/18Konoka練習会","WS_4/25Rena練習会"]
+    "WS":["WS_4/4manafreejazz","WS_4/11Cocona練習会","WS_4/18Konoka練習会","WS_4/25Rena練習会"]
   };
 
   // ===== 今日の曜日 =====
@@ -64,15 +64,11 @@
 
     s = s.split("?")[0].trim();
 
-    // 全角英数字 → 半角
     s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, ch =>
       String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
     );
 
-    // 英数字 + - _
     s = s.replace(/[^A-Za-z0-9\-_]/g, "");
-
-    // 英字は大文字統一
     s = s.toUpperCase();
 
     return s;
@@ -156,7 +152,63 @@
     });
   };
 
-  // ===== クラス描画（複数選択対応） =====
+  // ===== 今日の重複データまとめ取得（高速化） =====
+  window.getTodayDuplicateClasses = async function(member, classNames){
+
+    const cleanMember = window.normalizeMember(member);
+    const targets = new Set(classNames || []);
+
+    const now = new Date();
+    const today =
+      now.getFullYear() + "-" +
+      String(now.getMonth() + 1).padStart(2, "0") + "-" +
+      String(now.getDate()).padStart(2, "0");
+
+    const url =
+      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
+
+    try{
+      const res = await fetch(url);
+      const text = await res.text();
+
+      const json = JSON.parse(
+        text.replace("/*O_o*/","")
+            .replace("google.visualization.Query.setResponse(","")
+            .slice(0,-2)
+      );
+
+      const rows = json.table?.rows || [];
+      const duplicateSet = new Set();
+
+      for(const r of rows){
+        const m = String(r.c[1]?.v || "").trim();
+        const cls = String(r.c[2]?.v || "").trim();
+
+        const rawDate = r.c[3]?.v;
+        let date = "";
+
+        if(rawDate instanceof Date){
+          date =
+            rawDate.getFullYear() + "-" +
+            String(rawDate.getMonth() + 1).padStart(2, "0") + "-" +
+            String(rawDate.getDate()).padStart(2, "0");
+        }else{
+          date = String(rawDate || "").trim();
+        }
+
+        if(m === cleanMember && date === today && targets.has(cls)){
+          duplicateSet.add(cls);
+        }
+      }
+
+      return Array.from(duplicateSet);
+
+    }catch(e){
+      return [];
+    }
+  };
+
+  // ===== クラス描画（複数選択対応・高速化版） =====
   window.renderClasses = function({ day, titleEl, containerEl, onSubmit }){
 
     titleEl.textContent =
@@ -211,8 +263,8 @@
       }else{
         selectedClasses.push(cls);
         btn.style.opacity = "1";
-        btn.style.background = "#66adff";
-        btn.style.color = "#fff";
+        btn.style.background = "#66ADFF";
+        btn.style.color = "#FFF";
         btn.style.fontWeight = "bold";
       }
 
@@ -248,14 +300,14 @@
         return;
       }
 
-      const duplicateClasses = [];
+      // ここを1回だけ取得にして高速化
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "確認中…";
 
-      for(const cls of selectedClasses){
-        const isDup = await window.checkDuplicate(member, cls);
-        if(isDup){
-          duplicateClasses.push(cls);
-        }
-      }
+      const duplicateClasses = await window.getTodayDuplicateClasses(member, selectedClasses);
+
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "選択したクラスを確認";
 
       const ok = await window.showSelectionConfirm({
         member,
@@ -372,58 +424,10 @@
     };
   };
 
-  // ===== 二重受付チェック =====
+  // ===== 単体重複チェック（互換用に残す） =====
   window.checkDuplicate = async function(member, className){
-
-    const cleanMember = window.normalizeMember(member);
-
-    const now = new Date();
-    const today =
-      now.getFullYear() + "-" +
-      String(now.getMonth() + 1).padStart(2, "0") + "-" +
-      String(now.getDate()).padStart(2, "0");
-
-    const url =
-      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
-
-    try{
-      const res = await fetch(url);
-      const text = await res.text();
-
-      const json = JSON.parse(
-        text.replace("/*O_o*/","")
-            .replace("google.visualization.Query.setResponse(","")
-            .slice(0,-2)
-      );
-
-      const rows = json.table?.rows || [];
-
-      for(const r of rows){
-        const m = String(r.c[1]?.v || "").trim();
-        const cls = String(r.c[2]?.v || "").trim();
-
-        const rawDate = r.c[3]?.v;
-        let date = "";
-
-        if(rawDate instanceof Date){
-          date =
-            rawDate.getFullYear() + "-" +
-            String(rawDate.getMonth() + 1).padStart(2, "0") + "-" +
-            String(rawDate.getDate()).padStart(2, "0");
-        }else{
-          date = String(rawDate || "").trim();
-        }
-
-        if(m === cleanMember && cls === className && date === today){
-          return true;
-        }
-      }
-
-      return false;
-
-    }catch(e){
-      return false;
-    }
+    const duplicates = await window.getTodayDuplicateClasses(member, [className]);
+    return duplicates.includes(className);
   };
 
 })();

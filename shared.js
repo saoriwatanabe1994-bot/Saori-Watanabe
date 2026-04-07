@@ -19,7 +19,33 @@
     "木":["SERINAキッズ","SERINA初中級","Shogo","RIN","心","K×G瀬戸"],
     "金":["manaキッズ","mana初級","KANAMI","RYUYA","SAMURAI"],
     "土":["幼児","nikoキッズ","SAORI","TAKUEI","愛梨","MAHIRO初級","MAHIRO中級"],
-    "WS":["WS_4/4manafreejazz","WS_4/11Cocona練習会","WS_4/18Konoka練習会","WS_4/25Rena練習会"]
+    "WS":["WS_4/11Cocona練習会","WS_4/18Konoka練習会","WS_4/25Rena練習会"]
+  };
+
+  // ===== 内部キャッシュ =====
+  let duplicateCache = {
+    date: "",
+    rows: null,
+    promise: null
+  };
+
+  // ===== 東京の今日文字列 =====
+  window.getTokyoTodayString = function(){
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(new Date());
+
+    const map = {};
+    parts.forEach(p => {
+      if(p.type !== "literal"){
+        map[p.type] = p.value;
+      }
+    });
+
+    return `${map.year}-${map.month}-${map.day}`;
   };
 
   // ===== 今日の曜日 =====
@@ -152,63 +178,137 @@
     });
   };
 
-  // ===== 今日の重複データまとめ取得（高速化） =====
-  window.getTodayDuplicateClasses = async function(member, classNames){
+  // ===== gvizレスポンスをJSON化 =====
+  function parseGvizJson(text){
+    return JSON.parse(
+      text.replace("/*O_o*/","")
+          .replace("google.visualization.Query.setResponse(","")
+          .slice(0,-2)
+    );
+  }
 
-    const cleanMember = window.normalizeMember(member);
-    const targets = new Set(classNames || []);
+  // ===== セル値の日付を YYYY-MM-DD 化 =====
+  function normalizeSheetDateCell(cellValue){
+    if(cellValue == null) return "";
 
-    const now = new Date();
-    const today =
-      now.getFullYear() + "-" +
-      String(now.getMonth() + 1).padStart(2, "0") + "-" +
-      String(now.getDate()).padStart(2, "0");
+    if(cellValue instanceof Date){
+      return (
+        cellValue.getFullYear() + "-" +
+        String(cellValue.getMonth() + 1).padStart(2, "0") + "-" +
+        String(cellValue.getDate()).padStart(2, "0")
+      );
+    }
+
+    const s = String(cellValue).trim();
+
+    const m1 = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if(m1){
+      return (
+        m1[1] + "-" +
+        String(m1[2]).padStart(2, "0") + "-" +
+        String(m1[3]).padStart(2, "0")
+      );
+    }
+
+    const m2 = s.match(/^Date\((\d{4}),\s*(\d{1,2}),\s*(\d{1,2})/);
+    if(m2){
+      return (
+        m2[1] + "-" +
+        String(Number(m2[2]) + 1).padStart(2, "0") + "-" +
+        String(m2[3]).padStart(2, "0")
+      );
+    }
+
+    return s;
+  }
+
+  // ===== 今日の重複チェック用行データ取得（キャッシュあり） =====
+  async function getTodayDuplicateRows(){
+    const today = window.getTokyoTodayString();
+
+    if(duplicateCache.date !== today){
+      duplicateCache = {
+        date: today,
+        rows: null,
+        promise: null
+      };
+    }
+
+    if(Array.isArray(duplicateCache.rows)){
+      return duplicateCache.rows;
+    }
+
+    if(duplicateCache.promise){
+      return duplicateCache.promise;
+    }
 
     const url =
       "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
 
+    duplicateCache.promise = fetch(url)
+      .then(res => res.text())
+      .then(text => {
+        const json = parseGvizJson(text);
+        const rows = json.table?.rows || [];
+        duplicateCache.rows = rows;
+        duplicateCache.promise = null;
+        return rows;
+      })
+      .catch(e => {
+        duplicateCache.rows = [];
+        duplicateCache.promise = null;
+        return [];
+      });
+
+    return duplicateCache.promise;
+  }
+
+  // ===== 今日の重複データまとめ取得（キャッシュ版） =====
+  window.getTodayDuplicateClasses = async function(member, classNames){
+
+    const cleanMember = window.normalizeMember(member);
+    const targets = new Set(classNames || []);
+    const today = window.getTokyoTodayString();
+
     try{
-      const res = await fetch(url);
-      const text = await res.text();
-
-      const json = JSON.parse(
-        text.replace("/*O_o*/","")
-            .replace("google.visualization.Query.setResponse(","")
-            .slice(0,-2)
-      );
-
-      const rows = json.table?.rows || [];
+      const rows = await getTodayDuplicateRows();
       const duplicateSet = new Set();
 
       for(const r of rows){
-        const m = String(r.c[1]?.v || "").trim();
-        const cls = String(r.c[2]?.v || "").trim();
+        const m = String(r.c?.[1]?.v || "").trim();
+        if(m !== cleanMember) continue;
 
-        const rawDate = r.c[3]?.v;
-        let date = "";
+        const cls = String(r.c?.[2]?.v || "").trim();
+        if(!targets.has(cls)) continue;
 
-        if(rawDate instanceof Date){
-          date =
-            rawDate.getFullYear() + "-" +
-            String(rawDate.getMonth() + 1).padStart(2, "0") + "-" +
-            String(rawDate.getDate()).padStart(2, "0");
-        }else{
-          date = String(rawDate || "").trim();
-        }
+        const date = normalizeSheetDateCell(r.c?.[3]?.v);
+        if(date !== today) continue;
 
-        if(m === cleanMember && date === today && targets.has(cls)){
-          duplicateSet.add(cls);
+        duplicateSet.add(cls);
+
+        if(duplicateSet.size === targets.size){
+          break;
         }
       }
 
       return Array.from(duplicateSet);
 
     }catch(e){
+      console.log("getTodayDuplicateClasses error", e);
       return [];
     }
   };
 
-  // ===== クラス描画（複数選択対応・高速化版） =====
+  // ===== キャッシュ明示クリア（必要時用） =====
+  window.clearDuplicateCache = function(){
+    duplicateCache = {
+      date: "",
+      rows: null,
+      promise: null
+    };
+  };
+
+  // ===== クラス描画（複数選択対応・軽量化版） =====
   window.renderClasses = function({ day, titleEl, containerEl, onSubmit }){
 
     titleEl.textContent =
@@ -300,7 +400,6 @@
         return;
       }
 
-      // ここを1回だけ取得にして高速化
       confirmBtn.disabled = true;
       confirmBtn.textContent = "確認中…";
 

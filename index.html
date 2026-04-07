@@ -216,6 +216,7 @@ display:block;
 
   /* =====================
      受付処理（複数対応・1クラスずつ送信）
+     完了表示を先に出す版
   ===================== */
 
   async function submit(classNames){
@@ -233,6 +234,16 @@ display:block;
 
     const classes = Array.isArray(classNames) ? classNames : [classNames];
 
+    // 先に完了UIを表示
+    completeDetail.innerHTML =
+      "<span class='complete-title'>✅ 受付完了</span><br><br>" +
+      "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
+      "クラス：<b>" + classes.map(c => escapeHtml(c)).join("<br>") + "</b><br><br>" +
+      "<span>次の会員を読み取ります…</span>";
+
+    complete.style.display = "flex";
+
+    // 裏で送信開始（待たない）
     const requests = classes.map(className => {
       const url =
         APP_CONFIG.FORM_RESPONSE +
@@ -243,20 +254,14 @@ display:block;
         .catch(e => console.log("submit fetch error", e));
     });
 
-    await Promise.all(requests);
+    Promise.all(requests)
+      .catch(e => console.log("submit Promise.all error", e));
 
-    completeDetail.innerHTML =
-      "<span class='complete-title'>✅ 受付完了</span><br><br>" +
-      "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
-      "クラス：<b>" + classes.map(c => escapeHtml(c)).join("<br>") + "</b><br><br>" +
-      "<span>次の会員を読み取ります…</span>";
-
-    complete.style.display = "flex";
-
+    // 体感優先で先に次スキャンへ
     setTimeout(() => {
       openScanner();
       submitting = false;
-    }, 1000);
+    }, 700);
   }
 
   /* =====================

@@ -7,6 +7,9 @@
       "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse",
     ENTRY_MEMBER: "entry.71375240",
     ENTRY_CLASS: "entry.403922703",
+    SPREADSHEET_ID: "11bnm0HQD_uHdk_YICjA1PIboJqCiIAgJlKu2Vx1tTx0",
+    DUPLICATE_GID: "1858061488",
+    COUNT_GID: "1409450674"
   };
 
   // ===== 共通データ =====
@@ -243,7 +246,10 @@
     }
 
     const url =
-      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=0";
+      "https://docs.google.com/spreadsheets/d/" +
+      window.APP_CONFIG.SPREADSHEET_ID +
+      "/gviz/tq?tqx=out:json&gid=" +
+      window.APP_CONFIG.DUPLICATE_GID;
 
     duplicateCache.promise = fetch(url)
       .then(res => res.text())
@@ -255,6 +261,7 @@
         return rows;
       })
       .catch(e => {
+        console.log("getTodayDuplicateRows error", e);
         duplicateCache.rows = [];
         duplicateCache.promise = null;
         return [];
@@ -478,7 +485,10 @@
     const key = cleanMember + "_" + ym;
 
     const url =
-      "https://docs.google.com/spreadsheets/d/1Ufestn2VpThowSbCte97Ol60ZIX1ulKg9DLqhejkHwM/gviz/tq?tqx=out:json&gid=879977678" +
+      "https://docs.google.com/spreadsheets/d/" +
+      window.APP_CONFIG.SPREADSHEET_ID +
+      "/gviz/tq?tqx=out:json&gid=" +
+      window.APP_CONFIG.COUNT_GID +
       "&tq=" +
       encodeURIComponent("select C,D where E='" + key + "'");
 

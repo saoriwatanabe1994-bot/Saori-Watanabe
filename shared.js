@@ -128,7 +128,7 @@
   };
 
   // ===== 確認UI =====
-  window.showSelectionConfirm = function({ member, selectedClasses, duplicateClasses }){
+  window.showSelectionConfirm = function({ member, selectedClasses }){
     return new Promise((resolve) => {
 
       const old = document.getElementById("selectionConfirmOverlay");
@@ -160,14 +160,6 @@
         "<div style='font-size:36px;font-weight:800;text-align:left;display:inline-block;line-height:1.6;'>" +
         selectedClasses.map(c => "▶ " + window.escapeHtml(c)).join("<br>") +
         "</div>";
-
-      if(duplicateClasses.length > 0){
-        html +=
-          "<br><br><div style='font-size:22px;color:#d9534f;font-weight:700;'>⚠️ すでに受付済みの可能性あり</div>" +
-          "<div style='font-size:22px;text-align:left;display:inline-block;margin-top:8px;'>" +
-          duplicateClasses.map(c => "・" + window.escapeHtml(c)).join("<br>") +
-          "</div>";
-      }
 
       html +=
         "<div style='display:flex;gap:14px;margin-top:26px;'>" +
@@ -304,41 +296,44 @@
     return duplicateCache.promise;
   }
 
-  // ===== 今日の重複データまとめ取得 =====
-  window.getTodayDuplicateClasses = async function(member, classNames){
-
+  // ===== 今日の重複クラス一覧（会員単位） =====
+  window.getTodayDuplicateClassSet = async function(member){
     const cleanMember = window.normalizeMember(member);
-    const targets = new Set((classNames || []).map(normalizeClassName));
     const today = window.getTokyoTodayString();
+    const duplicateSet = new Set();
+
+    if(!cleanMember) return duplicateSet;
 
     try{
       const rows = await getTodayDuplicateRows();
-      const duplicateSet = new Set();
 
       for(const r of rows){
         const m = window.normalizeMember(r.c?.[1]?.v || "");
         if(m !== cleanMember) continue;
 
-        const cls = normalizeClassName(r.c?.[2]?.v || "");
-        if(!targets.has(cls)) continue;
-
         const rawDate = r.c?.[3]?.v ?? r.c?.[3]?.f ?? "";
         const date = normalizeSheetDateCell(rawDate);
         if(date !== today) continue;
 
-        duplicateSet.add(cls);
+        const cls = normalizeClassName(r.c?.[2]?.v || "");
+        if(!cls) continue;
 
-        if(duplicateSet.size === targets.size){
-          break;
-        }
+        duplicateSet.add(cls);
       }
 
-      return Array.from(duplicateSet);
-
+      return duplicateSet;
     }catch(e){
-      console.log("getTodayDuplicateClasses error", e);
-      return [];
+      console.log("getTodayDuplicateClassSet error", e);
+      return duplicateSet;
     }
+  };
+
+  // ===== 今日の重複データまとめ取得 =====
+  window.getTodayDuplicateClasses = async function(member, classNames){
+    const duplicateSet = await window.getTodayDuplicateClassSet(member);
+    return (classNames || [])
+      .map(normalizeClassName)
+      .filter(cls => duplicateSet.has(cls));
   };
 
   // ===== キャッシュ明示クリア =====
@@ -351,7 +346,7 @@
     };
   };
 
-  // ===== クラス描画（複数選択対応・軽量化版） =====
+  // ===== クラス描画（複数選択対応・重複クラス無効化版） =====
   window.renderClasses = function({ day, titleEl, containerEl, onSubmit }){
 
     titleEl.textContent =
@@ -363,6 +358,13 @@
 
     const list = window.CLASSES_BY_DAY[day] || [];
     const selectedClasses = [];
+    const classButtonMap = new Map();
+    let duplicateClassSet = new Set();
+
+    const infoBox = document.createElement("div");
+    infoBox.style.fontSize = "22px";
+    infoBox.style.margin = "0 0 12px";
+    infoBox.style.lineHeight = "1.6";
 
     const selectedBox = document.createElement("div");
     selectedBox.style.fontSize = "24px";
@@ -394,7 +396,26 @@
       confirmBtn.style.display = "block";
     }
 
+    function applyDuplicateStyles(btn, isDuplicate){
+      if(isDuplicate){
+        btn.disabled = true;
+        btn.style.opacity = "1";
+        btn.style.background = "#d9d9d9";
+        btn.style.color = "#666";
+        btn.style.fontWeight = "700";
+        btn.style.border = "none";
+        btn.textContent = btn.dataset.baseLabel + "（受付済み）";
+        btn.style.cursor = "not-allowed";
+      }else{
+        btn.disabled = false;
+        btn.style.cursor = "pointer";
+        btn.textContent = btn.dataset.baseLabel;
+      }
+    }
+
     function toggleClass(btn, cls){
+      if(btn.disabled) return;
+
       const idx = selectedClasses.indexOf(cls);
 
       if(idx >= 0){
@@ -414,16 +435,61 @@
       refreshSelectedView();
     }
 
+    function removeDuplicateSelections(){
+      for(let i = selectedClasses.length - 1; i >= 0; i--){
+        if(duplicateClassSet.has(normalizeClassName(selectedClasses[i]))){
+          selectedClasses.splice(i, 1);
+        }
+      }
+    }
+
+    async function paintDuplicateButtons(){
+      const member = window.normalizeMember(window.currentMember);
+
+      if(!member){
+        infoBox.innerHTML = "";
+        duplicateClassSet = new Set();
+        return;
+      }
+
+      infoBox.innerHTML = "受付済みクラス確認中…";
+
+      duplicateClassSet = await window.getTodayDuplicateClassSet(member);
+
+      classButtonMap.forEach((btn, cls) => {
+        const isDuplicate = duplicateClassSet.has(normalizeClassName(cls));
+        applyDuplicateStyles(btn, isDuplicate);
+      });
+
+      removeDuplicateSelections();
+      refreshSelectedView();
+
+      const dayDuplicateCount = list.filter(cls =>
+        duplicateClassSet.has(normalizeClassName(cls))
+      ).length;
+
+      if(dayDuplicateCount > 0){
+        infoBox.innerHTML =
+          "<span style='color:#666;font-weight:700;'>グレー表示のクラスは本日受付済みです</span>";
+      }else{
+        infoBox.innerHTML = "";
+      }
+    }
+
+    containerEl.appendChild(infoBox);
+
     list.forEach((cls) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.textContent = `受付 ▶ ${cls}`;
+      btn.dataset.baseLabel = `受付 ▶ ${cls}`;
+      btn.textContent = btn.dataset.baseLabel;
       btn.className = "class-btn";
 
       btn.onclick = () => {
         toggleClass(btn, cls);
       };
 
+      classButtonMap.set(cls, btn);
       containerEl.appendChild(btn);
     });
 
@@ -451,19 +517,27 @@
       confirmBtn.disabled = false;
       confirmBtn.textContent = "選択したクラスを確認";
 
+      if(duplicateClasses.length > 0){
+        await paintDuplicateButtons();
+        alert(
+          "すでに受付済みのクラスが含まれています。\n\n" +
+          duplicateClasses.map(c => "・" + c).join("\n")
+        );
+        return;
+      }
+
       const ok = await window.showSelectionConfirm({
         member,
-        selectedClasses,
-        duplicateClasses
+        selectedClasses
       });
 
       if(!ok) return;
 
-      // 受付後に古い一覧を見続けないようクリア
       window.clearDuplicateCache();
-
       onSubmit(selectedClasses.slice());
     };
+
+    paintDuplicateButtons();
   };
 
   // ===== LIFF初期化 =====

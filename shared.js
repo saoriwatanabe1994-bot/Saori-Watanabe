@@ -9,7 +9,8 @@
     ENTRY_CLASS: "entry.403922703",
     SPREADSHEET_ID: "11bnm0HQD_uHdk_YICjA1PIboJqCiIAgJlKu2Vx1tTx0",
     DUPLICATE_GID: "1858061488",
-    COUNT_GID: "1409450674"
+    COUNT_GID: "1409450674",
+    DUPLICATE_CACHE_MS: 15000
   };
 
   // ===== 共通データ =====
@@ -29,7 +30,8 @@
   let duplicateCache = {
     date: "",
     rows: null,
-    promise: null
+    promise: null,
+    fetchedAt: 0
   };
 
   // ===== 東京の今日文字列 =====
@@ -102,6 +104,14 @@
 
     return s;
   };
+
+  // ===== クラス名整形 =====
+  function normalizeClassName(value){
+    return String(value || "")
+      .replace(/\u3000/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
   // ===== 曜日ボタン =====
   window.renderDayButtons = function({ dayButtonsEl, selectedDay, onSelect }){
@@ -243,16 +253,23 @@
   // ===== 今日の重複チェック用行データ取得（キャッシュあり） =====
   async function getTodayDuplicateRows(){
     const today = window.getTokyoTodayString();
+    const now = Date.now();
+    const cacheMs = Number(window.APP_CONFIG.DUPLICATE_CACHE_MS || 0);
 
     if(duplicateCache.date !== today){
       duplicateCache = {
         date: today,
         rows: null,
-        promise: null
+        promise: null,
+        fetchedAt: 0
       };
     }
 
-    if(Array.isArray(duplicateCache.rows)){
+    if(
+      Array.isArray(duplicateCache.rows) &&
+      duplicateCache.fetchedAt &&
+      (now - duplicateCache.fetchedAt) < cacheMs
+    ){
       return duplicateCache.rows;
     }
 
@@ -273,23 +290,25 @@
         const rows = json.table?.rows || [];
         duplicateCache.rows = rows;
         duplicateCache.promise = null;
+        duplicateCache.fetchedAt = Date.now();
         return rows;
       })
       .catch(e => {
         console.log("getTodayDuplicateRows error", e);
         duplicateCache.rows = [];
         duplicateCache.promise = null;
+        duplicateCache.fetchedAt = 0;
         return [];
       });
 
     return duplicateCache.promise;
   }
 
-  // ===== 今日の重複データまとめ取得（キャッシュ版） =====
+  // ===== 今日の重複データまとめ取得 =====
   window.getTodayDuplicateClasses = async function(member, classNames){
 
     const cleanMember = window.normalizeMember(member);
-    const targets = new Set(classNames || []);
+    const targets = new Set((classNames || []).map(normalizeClassName));
     const today = window.getTokyoTodayString();
 
     try{
@@ -300,7 +319,7 @@
         const m = window.normalizeMember(r.c?.[1]?.v || "");
         if(m !== cleanMember) continue;
 
-        const cls = String(r.c?.[2]?.v || "").trim();
+        const cls = normalizeClassName(r.c?.[2]?.v || "");
         if(!targets.has(cls)) continue;
 
         const rawDate = r.c?.[3]?.v ?? r.c?.[3]?.f ?? "";
@@ -322,12 +341,13 @@
     }
   };
 
-  // ===== キャッシュ明示クリア（必要時用） =====
+  // ===== キャッシュ明示クリア =====
   window.clearDuplicateCache = function(){
     duplicateCache = {
       date: "",
       rows: null,
-      promise: null
+      promise: null,
+      fetchedAt: 0
     };
   };
 
@@ -438,6 +458,9 @@
       });
 
       if(!ok) return;
+
+      // 受付後に古い一覧を見続けないようクリア
+      window.clearDuplicateCache();
 
       onSubmit(selectedClasses.slice());
     };
@@ -555,10 +578,10 @@
     };
   };
 
-  // ===== 単体重複チェック（互換用に残す） =====
+  // ===== 単体重複チェック =====
   window.checkDuplicate = async function(member, className){
     const duplicates = await window.getTodayDuplicateClasses(member, [className]);
-    return duplicates.includes(className);
+    return duplicates.includes(normalizeClassName(className));
   };
 
 })();

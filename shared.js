@@ -225,87 +225,93 @@
     return s;
   }
 
-  // ===== 今日の重複チェック用行データ取得（キャッシュあり） =====
-  async function getTodayDuplicateRows(){
-    const today = window.getTokyoTodayString();
+ // ===== セル値の日付を YYYY-MM-DD 化 =====
+function normalizeSheetDateCell(cellValue){
+  if(cellValue == null) return "";
 
-    if(duplicateCache.date !== today){
-      duplicateCache = {
-        date: today,
-        rows: null,
-        promise: null
-      };
-    }
-
-    if(Array.isArray(duplicateCache.rows)){
-      return duplicateCache.rows;
-    }
-
-    if(duplicateCache.promise){
-      return duplicateCache.promise;
-    }
-
-    const url =
-      "https://docs.google.com/spreadsheets/d/" +
-      window.APP_CONFIG.SPREADSHEET_ID +
-      "/gviz/tq?tqx=out:json&gid=" +
-      window.APP_CONFIG.DUPLICATE_GID;
-
-    duplicateCache.promise = fetch(url)
-      .then(res => res.text())
-      .then(text => {
-        const json = parseGvizJson(text);
-        const rows = json.table?.rows || [];
-        duplicateCache.rows = rows;
-        duplicateCache.promise = null;
-        return rows;
-      })
-      .catch(e => {
-        console.log("getTodayDuplicateRows error", e);
-        duplicateCache.rows = [];
-        duplicateCache.promise = null;
-        return [];
-      });
-
-    return duplicateCache.promise;
+  if(cellValue instanceof Date){
+    return (
+      cellValue.getFullYear() + "-" +
+      String(cellValue.getMonth() + 1).padStart(2, "0") + "-" +
+      String(cellValue.getDate()).padStart(2, "0")
+    );
   }
 
-  // ===== 今日の重複データまとめ取得（キャッシュ版） =====
-  window.getTodayDuplicateClasses = async function(member, classNames){
+  let s = String(cellValue).trim();
+  if(!s) return "";
 
-    const cleanMember = window.normalizeMember(member);
-    const targets = new Set(classNames || []);
-    const today = window.getTokyoTodayString();
+  s = s.replace(/\s+/g, " ");
+  s = s.replace(/年/g, "-").replace(/月/g, "-").replace(/日/g, "");
+  s = s.replace(/\./g, "/");
 
-    try{
-      const rows = await getTodayDuplicateRows();
-      const duplicateSet = new Set();
+  const m1 = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:\s.*)?$/);
+  if(m1){
+    return (
+      m1[1] + "-" +
+      String(m1[2]).padStart(2, "0") + "-" +
+      String(m1[3]).padStart(2, "0")
+    );
+  }
 
-      for(const r of rows){
-        const m = String(r.c?.[1]?.v || "").trim();
-        if(m !== cleanMember) continue;
+  const m2 = s.match(/^(\d{1,2})[-\/](\d{1,2})(?:\s.*)?$/);
+  if(m2){
+    const todayYear = new Date().getFullYear();
+    return (
+      todayYear + "-" +
+      String(m2[1]).padStart(2, "0") + "-" +
+      String(m2[2]).padStart(2, "0")
+    );
+  }
 
-        const cls = String(r.c?.[2]?.v || "").trim();
-        if(!targets.has(cls)) continue;
+  const m3 = s.match(/^Date\((\d{4}),\s*(\d{1,2}),\s*(\d{1,2})/);
+  if(m3){
+    return (
+      m3[1] + "-" +
+      String(Number(m3[2]) + 1).padStart(2, "0") + "-" +
+      String(m3[3]).padStart(2, "0")
+    );
+  }
 
-        const date = normalizeSheetDateCell(r.c?.[3]?.v);
-        if(date !== today) continue;
+  return s;
+}
 
-        duplicateSet.add(cls);
+// ===== 今日の重複データまとめ取得（キャッシュ版） =====
+window.getTodayDuplicateClasses = async function(member, classNames){
 
-        if(duplicateSet.size === targets.size){
-          break;
-        }
+  const cleanMember = window.normalizeMember(member);
+  const targets = new Set(classNames || []);
+  const today = window.getTokyoTodayString();
+
+  try{
+    const rows = await getTodayDuplicateRows();
+    const duplicateSet = new Set();
+
+    for(const r of rows){
+      const m = window.normalizeMember(r.c?.[1]?.v || "");
+      if(m !== cleanMember) continue;
+
+      const cls = String(r.c?.[2]?.v || "").trim();
+      if(!targets.has(cls)) continue;
+
+      const rawDate = r.c?.[3]?.v ?? r.c?.[3]?.f ?? "";
+      const date = normalizeSheetDateCell(rawDate);
+      if(date !== today) continue;
+
+      duplicateSet.add(cls);
+
+      if(duplicateSet.size === targets.size){
+        break;
       }
-
-      return Array.from(duplicateSet);
-
-    }catch(e){
-      console.log("getTodayDuplicateClasses error", e);
-      return [];
     }
-  };
 
+    return Array.from(duplicateSet);
+
+  }catch(e){
+    console.log("getTodayDuplicateClasses error", e);
+    return [];
+  }
+};
+  
   // ===== キャッシュ明示クリア（必要時用） =====
   window.clearDuplicateCache = function(){
     duplicateCache = {

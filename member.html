@@ -12,7 +12,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
     }
 
     .card {
@@ -23,6 +23,7 @@
       padding: 30px 20px;
       text-align: center;
       box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      box-sizing: border-box;
     }
 
     .title {
@@ -46,10 +47,18 @@
       margin: 20px 0;
     }
 
+    .qr img {
+      width: 220px;
+      height: 220px;
+      background: #fff;
+      border: 1px solid #eee;
+    }
+
     .note {
       font-size: 14px;
       color: #999;
       margin-top: 15px;
+      line-height: 1.6;
     }
   </style>
 </head>
@@ -57,34 +66,36 @@
 
 <div class="card">
   <div class="title">会員証</div>
-
-  <div class="name" id="name">--- ---</div>
+  <div class="name" id="name">会員</div>
   <div class="member" id="member">No.----</div>
 
   <div class="qr">
-    <img id="qrImg" src="" width="220" height="220">
+    <img id="qrImg" alt="QRコード">
   </div>
 
+  <div class="note">
+    スクリーンショットで保存してください
+  </div>
 </div>
 
 <script>
-  // URLから会員番号取得
   const params = new URLSearchParams(location.search);
   const member = params.get("member") || "000000";
 
-  // 名前（仮：後でスプシ連動可）
-  const name = "会員";
-
-  // 表示
   document.getElementById("member").textContent = "No." + member;
-  document.getElementById("name").textContent = name;
+  document.getElementById("name").textContent = "会員";
 
-  // QR生成
+  const qrText = "member=" + member;
   const qrUrl =
-    "https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=" +
-    encodeURIComponent("member=" + member);
+    "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" +
+    encodeURIComponent(qrText);
 
-  document.getElementById("qrImg").src = qrUrl;
+  const qrImg = document.getElementById("qrImg");
+  qrImg.src = qrUrl;
+
+  qrImg.onerror = function () {
+    alert("QRコードの読み込みに失敗しました");
+  };
 </script>
 
 </body>

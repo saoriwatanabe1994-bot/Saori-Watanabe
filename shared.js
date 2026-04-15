@@ -10,7 +10,8 @@
     SPREADSHEET_ID: "11bnm0HQD_uHdk_YICjA1PIboJqCiIAgJlKu2Vx1tTx0",
     DUPLICATE_GID: "1858061488",
     COUNT_GID: "1409450674",
-    DUPLICATE_CACHE_MS: 15000
+    DUPLICATE_CACHE_MS: 15000,
+    LOCAL_PENDING_MINUTES: 10
   };
 
   // ===== 共通データ =====
@@ -23,7 +24,7 @@
     "木":["SERINAキッズ","SERINA初中級","Shogo","RIN","心","K×G瀬戸"],
     "金":["manaキッズ","mana初級","KANAMI","RYUYA","SAMURAI"],
     "土":["幼児","nikoキッズ","SAORI","TAKUEI","愛梨","MAHIRO初級","MAHIRO中級"],
-    "WS":["4/4manafreejazz","WS_4/11Cocona練習会","WS_4/18Konoka練習会","WS_4/25Rena練習会"]
+    "WS":["WS_4/11Cocona練習会","WS_4/18Konoka練習会","WS_4/25Rena練習会"]
   };
 
   // ===== 内部キャッシュ =====
@@ -111,6 +112,102 @@
       .replace(/\u3000/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  // ===== ローカル受付中キー =====
+  function getLocalPendingStorageKey(){
+    return "danceStudioPendingReceipts";
+  }
+
+  function readLocalPendingMap(){
+    try{
+      const raw = localStorage.getItem(getLocalPendingStorageKey());
+      const obj = raw ? JSON.parse(raw) : {};
+      return obj && typeof obj === "object" ? obj : {};
+    }catch(e){
+      return {};
+    }
+  }
+
+  function writeLocalPendingMap(map){
+    try{
+      localStorage.setItem(getLocalPendingStorageKey(), JSON.stringify(map));
+    }catch(e){}
+  }
+
+  function getLocalPendingKey(member, date){
+    return `${date}__${member}`;
+  }
+
+  function cleanupLocalPending(){
+    const map = readLocalPendingMap();
+    const now = Date.now();
+    let changed = false;
+
+    Object.keys(map).forEach(key => {
+      const arr = Array.isArray(map[key]) ? map[key] : [];
+      const filtered = arr.filter(item => {
+        return item && item.className && item.expiresAt && item.expiresAt > now;
+      });
+
+      if(filtered.length > 0){
+        if(filtered.length !== arr.length){
+          map[key] = filtered;
+          changed = true;
+        }
+      }else{
+        delete map[key];
+        changed = true;
+      }
+    });
+
+    if(changed){
+      writeLocalPendingMap(map);
+    }
+
+    return map;
+  }
+
+  function getLocalPendingClassSet(member){
+    const cleanMember = window.normalizeMember(member);
+    const today = window.getTokyoTodayString();
+    const map = cleanupLocalPending();
+    const key = getLocalPendingKey(cleanMember, today);
+    const arr = Array.isArray(map[key]) ? map[key] : [];
+    return new Set(arr.map(item => normalizeClassName(item.className)));
+  }
+
+  function addLocalPendingClasses(member, classNames){
+    const cleanMember = window.normalizeMember(member);
+    const today = window.getTokyoTodayString();
+    const map = cleanupLocalPending();
+    const key = getLocalPendingKey(cleanMember, today);
+    const now = Date.now();
+    const expiresAt = now + Number(window.APP_CONFIG.LOCAL_PENDING_MINUTES || 10) * 60 * 1000;
+
+    const current = Array.isArray(map[key]) ? map[key] : [];
+    const byClass = new Map();
+
+    current.forEach(item => {
+      if(item && item.className && item.expiresAt && item.expiresAt > now){
+        byClass.set(normalizeClassName(item.className), {
+          className: normalizeClassName(item.className),
+          expiresAt: item.expiresAt
+        });
+      }
+    });
+
+    (classNames || []).forEach(cls => {
+      const normalized = normalizeClassName(cls);
+      if(!normalized) return;
+      byClass.set(normalized, {
+        className: normalized,
+        expiresAt
+      });
+    });
+
+    map[key] = Array.from(byClass.values());
+    writeLocalPendingMap(map);
   }
 
   // ===== 曜日ボタン =====
@@ -296,8 +393,8 @@
     return duplicateCache.promise;
   }
 
-  // ===== 今日の重複クラス一覧（会員単位） =====
-  window.getTodayDuplicateClassSet = async function(member){
+  // ===== 今日の重複クラス一覧（スプシ側） =====
+  window.getTodayRemoteDuplicateClassSet = async function(member){
     const cleanMember = window.normalizeMember(member);
     const today = window.getTokyoTodayString();
     const duplicateSet = new Set();
@@ -323,9 +420,21 @@
 
       return duplicateSet;
     }catch(e){
-      console.log("getTodayDuplicateClassSet error", e);
+      console.log("getTodayRemoteDuplicateClassSet error", e);
       return duplicateSet;
     }
+  };
+
+  // ===== 今日の重複クラス一覧（端末ローカル＋スプシ） =====
+  window.getTodayDuplicateClassSet = async function(member){
+    const remoteSet = await window.getTodayRemoteDuplicateClassSet(member);
+    const localSet = getLocalPendingClassSet(member);
+    const merged = new Set();
+
+    remoteSet.forEach(v => merged.add(v));
+    localSet.forEach(v => merged.add(v));
+
+    return merged;
   };
 
   // ===== 今日の重複データまとめ取得 =====
@@ -360,6 +469,7 @@
     const selectedClasses = [];
     const classButtonMap = new Map();
     let duplicateClassSet = new Set();
+    let isSubmitting = false;
 
     const infoBox = document.createElement("div");
     infoBox.style.fontSize = "22px";
@@ -413,8 +523,32 @@
       }
     }
 
+    function setSubmittingState(flag){
+      isSubmitting = flag;
+
+      classButtonMap.forEach((btn) => {
+        const baseLabel = btn.dataset.className || "";
+        const isDuplicate = duplicateClassSet.has(normalizeClassName(baseLabel));
+
+        if(flag){
+          btn.disabled = true;
+          btn.style.cursor = "wait";
+        }else{
+          applyDuplicateStyles(btn, isDuplicate);
+        }
+      });
+
+      if(flag){
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "受付中…";
+      }else{
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "選択したクラスを確認";
+      }
+    }
+
     function toggleClass(btn, cls){
-      if(btn.disabled) return;
+      if(btn.disabled || isSubmitting) return;
 
       const idx = selectedClasses.indexOf(cls);
 
@@ -441,6 +575,22 @@
           selectedClasses.splice(i, 1);
         }
       }
+    }
+
+    function clearSelectionsAndBlueState(){
+      selectedClasses.splice(0, selectedClasses.length);
+
+      classButtonMap.forEach((btn, cls) => {
+        const isDuplicate = duplicateClassSet.has(normalizeClassName(cls));
+        if(!isDuplicate){
+          btn.style.opacity = "1";
+          btn.style.background = "";
+          btn.style.color = "";
+          btn.style.fontWeight = "";
+        }
+      });
+
+      refreshSelectedView();
     }
 
     async function paintDuplicateButtons(){
@@ -482,6 +632,7 @@
       const btn = document.createElement("button");
       btn.type = "button";
       btn.dataset.baseLabel = `受付 ▶ ${cls}`;
+      btn.dataset.className = cls;
       btn.textContent = btn.dataset.baseLabel;
       btn.className = "class-btn";
 
@@ -499,6 +650,8 @@
     confirmBtn.onclick = async () => {
       const member = window.normalizeMember(window.currentMember);
 
+      if(isSubmitting) return;
+
       if(!member){
         alert("会員番号が取得できていません");
         return;
@@ -512,6 +665,7 @@
       confirmBtn.disabled = true;
       confirmBtn.textContent = "確認中…";
 
+      window.clearDuplicateCache();
       const duplicateClasses = await window.getTodayDuplicateClasses(member, selectedClasses);
 
       confirmBtn.disabled = false;
@@ -533,8 +687,27 @@
 
       if(!ok) return;
 
-      window.clearDuplicateCache();
-      onSubmit(selectedClasses.slice());
+      // ここで即ロック（スプシ反映待ちの穴を端末側で埋める）
+      addLocalPendingClasses(member, selectedClasses);
+
+      // ロック反映
+      duplicateClassSet = await window.getTodayDuplicateClassSet(member);
+      clearSelectionsAndBlueState();
+      await paintDuplicateButtons();
+
+      // 送信中は再操作禁止
+      setSubmittingState(true);
+
+      try{
+        await Promise.resolve(onSubmit(selectedClasses.slice()));
+        window.clearDuplicateCache();
+        await paintDuplicateButtons();
+      }catch(e){
+        console.log("onSubmit error", e);
+        alert("受付送信時にエラーが発生しました。通信状況をご確認ください。");
+      }finally{
+        setSubmittingState(false);
+      }
     };
 
     paintDuplicateButtons();

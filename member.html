@@ -72,6 +72,10 @@
   <div class="qr">
     <img id="qrImg" alt="QRコード">
   </div>
+
+  <div class="note">
+    スクリーンショットで保存してください
+  </div>
 </div>
 
 <script>
@@ -81,7 +85,9 @@
   document.getElementById("member").textContent = "No." + member;
   document.getElementById("name").textContent = "会員";
 
-  const qrText = "member=" + member;
+  const qrText =
+    "https://liff.line.me/2008912129-TQRCpL9d?member=" + encodeURIComponent(member);
+
   const qrUrl =
     "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" +
     encodeURIComponent(qrText);

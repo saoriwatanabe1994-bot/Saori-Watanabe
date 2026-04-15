@@ -7,9 +7,9 @@
       "https://docs.google.com/forms/d/e/1FAIpQLSfZeKs2ZPJ0iIOxg6L7UZUr7fUmZy-E5OwA7aq93Uu7VaysBA/formResponse",
     ENTRY_MEMBER: "entry.71375240",
     ENTRY_CLASS: "entry.403922703",
-    SPREADSHEET_ID: "11bnm0HQD_uHdk_YICjA1PIboJqCiIAgJlKu2Vx1tTx0",
-    DUPLICATE_GID: "1858061488",
-    COUNT_GID: "1409450674",
+    SPREADSHEET_ID: "1z7xSOOjsXyuQn5p9aE3tl5fgzIMkxoLKVnnpTYUTS9k",
+    DUPLICATE_GID: "969068048",
+    COUNT_GID: "218311726",
     DUPLICATE_CACHE_MS: 15000,
     LOCAL_PENDING_MINUTES: 10
   };
@@ -680,26 +680,25 @@
         return;
       }
 
+      const submitClasses = selectedClasses.slice();
+
       const ok = await window.showSelectionConfirm({
         member,
-        selectedClasses
+        selectedClasses: submitClasses
       });
 
       if(!ok) return;
 
-      // ここで即ロック（スプシ反映待ちの穴を端末側で埋める）
-      addLocalPendingClasses(member, selectedClasses);
+      addLocalPendingClasses(member, submitClasses);
 
-      // ロック反映
       duplicateClassSet = await window.getTodayDuplicateClassSet(member);
       clearSelectionsAndBlueState();
       await paintDuplicateButtons();
 
-      // 送信中は再操作禁止
       setSubmittingState(true);
 
       try{
-        await Promise.resolve(onSubmit(selectedClasses.slice()));
+        await Promise.resolve(onSubmit(submitClasses));
         window.clearDuplicateCache();
         await paintDuplicateButtons();
       }catch(e){

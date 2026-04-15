@@ -757,86 +757,86 @@
     }, 5000);
   };
 
-// ===== 受講数取得 =====
-window.fetchCount = async function(member){
+  // ===== 受講数取得（照会シート A:会員番号 B:年月 C:受講回数 D:最終受講 対応） =====
+  window.fetchCount = async function(member){
 
-  const cleanMember = window.normalizeMember(member);
+    const cleanMember = window.normalizeMember(member);
 
-  const now = new Date();
-  const ym =
-    now.getFullYear() + "-" +
-    String(now.getMonth() + 1).padStart(2, "0");
+    const now = new Date();
+    const ym =
+      now.getFullYear() + "-" +
+      String(now.getMonth() + 1).padStart(2, "0");
 
-  const url =
-    "https://docs.google.com/spreadsheets/d/" +
-    window.APP_CONFIG.SPREADSHEET_ID +
-    "/gviz/tq?tqx=out:json&gid=" +
-    window.APP_CONFIG.COUNT_GID +
-    "&tq=" +
-    encodeURIComponent(
-      "select C,D where A='" + cleanMember + "' and B='" + ym + "'"
-    );
+    const url =
+      "https://docs.google.com/spreadsheets/d/" +
+      window.APP_CONFIG.SPREADSHEET_ID +
+      "/gviz/tq?tqx=out:json&gid=" +
+      window.APP_CONFIG.COUNT_GID +
+      "&tq=" +
+      encodeURIComponent(
+        "select C,D where A='" + cleanMember + "' and B='" + ym + "'"
+      );
 
-  try{
-    const res = await fetch(url);
-    const text = await res.text();
+    try{
+      const res = await fetch(url);
+      const text = await res.text();
 
-    const json = JSON.parse(
-      text.substring(
-        text.indexOf("{"),
-        text.lastIndexOf("}") + 1
-      )
-    );
+      const json = JSON.parse(
+        text.substring(
+          text.indexOf("{"),
+          text.lastIndexOf("}") + 1
+        )
+      );
 
-    const rows = json.table?.rows || [];
+      const rows = json.table?.rows || [];
 
-    if(rows.length > 0){
-      const count = Number(rows[0].c?.[0]?.v || 0);
+      if(rows.length > 0){
+        const count = Number(rows[0].c?.[0]?.v || 0);
 
-      let last = "";
-      if(rows[0].c?.[1]?.f){
-        const f = rows[0].c[1].f;
-        const parts = f.split(" ")[0].split("/");
-        if(parts.length >= 3){
-          last = Number(parts[1]) + "/" + Number(parts[2]);
-        }else{
-          last = f;
-        }
-      }else if(rows[0].c?.[1]?.v){
-        const raw = rows[0].c[1].v;
-
-        if(raw instanceof Date){
-          last =
-            Number(raw.getMonth() + 1) + "/" +
-            Number(raw.getDate());
-        }else{
-          const s = String(raw).trim();
-          const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
-          if(m){
-            last = Number(m[2]) + "/" + Number(m[3]);
+        let last = "";
+        if(rows[0].c?.[1]?.f){
+          const f = rows[0].c[1].f;
+          const parts = f.split(" ")[0].split("/");
+          if(parts.length >= 3){
+            last = Number(parts[1]) + "/" + Number(parts[2]);
           }else{
-            last = s;
+            last = f;
+          }
+        }else if(rows[0].c?.[1]?.v){
+          const raw = rows[0].c[1].v;
+
+          if(raw instanceof Date){
+            last =
+              Number(raw.getMonth() + 1) + "/" +
+              Number(raw.getDate());
+          }else{
+            const s = String(raw).trim();
+            const m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+            if(m){
+              last = Number(m[2]) + "/" + Number(m[3]);
+            }else{
+              last = s;
+            }
           }
         }
+
+        return {
+          member: cleanMember,
+          count: count,
+          last: last
+        };
       }
 
-      return {
-        member: cleanMember,
-        count: count,
-        last: last
-      };
+    }catch(e){
+      console.log("fetchCount error:", e);
     }
 
-  }catch(e){
-    console.log("fetchCount error:", e);
-  }
-
-  return {
-    member: cleanMember,
-    count: 0,
-    last: ""
+    return {
+      member: cleanMember,
+      count: 0,
+      last: ""
+    };
   };
-};
 
   // ===== 単体重複チェック =====
   window.checkDuplicate = async function(member, className){

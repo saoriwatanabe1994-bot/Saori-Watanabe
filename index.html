@@ -1,294 +1,56 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>受付</title>
+async function submit(classNames){
 
-<script src="shared.js?v=20260319-14"></script>
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  if(submitting) return;
+  submitting = true;
 
-<style>
-body { font-family: sans-serif; padding: 10px; }
+  const currentMember = normalizeMember(window.currentMember);
 
-.day-btn{
-font-size:24px;
-padding:14px 20px;
-margin:6px 4px;
-opacity:0.6;
-}
-
-.day-btn.today{
-opacity:1;
-background:#66adff;
-color:#fff;
-font-weight:bold;
-}
-
-.class-btn{
-font-size:32px;
-padding:60px 28px;
-margin:18px 0;
-width:100%;
-text-align:left;
-}
-
-.remain-btn{
-font-size:28px;
-padding:26px 20px;
-margin:16px 0;
-width:100%;
-background:#ffd966;
-color:#000;
-font-weight:bold;
-border:none;
-border-radius:10px;
-}
-
-#complete{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.65);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:999;
-}
-
-#completeBox{
-background:#fff;
-padding:44px 20px;
-border-radius:18px;
-text-align:center;
-width:98%;
-max-width:560px;
-box-sizing:border-box;
-line-height:1.6;
-}
-
-#completeDetail{
-font-size:28px;
-font-weight:700;
-}
-
-#completeDetail b{
-font-size:36px;
-}
-
-.complete-title{
-font-size:48px;
-font-weight:800;
-display:block;
-}
-</style>
-</head>
-
-<body>
-
-<h2 id="title"></h2>
-
-<button id="remainBtn" class="remain-btn">
-受講数照会
-</button>
-
-<div id="dayButtons"></div>
-<div id="container"></div>
-
-<div id="complete">
-  <div id="completeBox">
-    <div id="completeDetail"></div>
-  </div>
-</div>
-
-<script>
-(async () => {
-
-  await initLiffSafe();
-
-  let member = null;
-
-  const params = new URLSearchParams(window.location.search);
-  member = params.get("member");
-
-  if(member){
-    member = normalizeMember(member);
+  if(!currentMember){
+    alert("会員QRを読み取ってください");
+    submitting = false;
+    return;
   }
 
-  if(!member){
-    const url = new URL(location.href);
-    member = url.searchParams.get("member");
+  const classes = Array.isArray(classNames) ? classNames : [classNames];
 
-    if(member){
-      member = normalizeMember(member);
-    }
-  }
+  // 先にUI表示
+  completeDetail.innerHTML =
+    "<span class='complete-title'>✅ 受付完了</span><br><br>" +
+    "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
+    "クラス：<b>" + classes.map(c => escapeHtml(c)).join("<br>") + "</b><br><br>" +
+    "<span>送信中…</span>";
 
-  if(!member && typeof liff !== "undefined"){
-    try{
-      if(liff.isInClient()){
-        const ctx = liff.getContext();
-        if(ctx && ctx.queryParams && ctx.queryParams.member){
-          member = normalizeMember(ctx.queryParams.member);
-        }
-      }
-    }catch(e){
-      console.log("LIFF context error", e);
-    }
-  }
+  complete.style.display = "flex";
 
-  window.currentMember = normalizeMember(member || "");
+  try{
+    // 🔥 ここが重要（awaitする）
+    for(const className of classes){
 
-  const title = document.getElementById("title");
-  const container = document.getElementById("container");
-  const dayButtons = document.getElementById("dayButtons");
-  const complete = document.getElementById("complete");
-  const completeDetail = document.getElementById("completeDetail");
+      const url =
+        APP_CONFIG.FORM_RESPONSE +
+        "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
+        "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
 
-  let selectedDay = getTokyoWeekdayLabel();
-  if(selectedDay === "日") selectedDay = "月";
-
-  let submitting = false;
-  const cleanBaseUrl = location.origin + location.pathname;
-
-  /* =====================
-     QR再読取
-  ===================== */
-
-  window.openScanner = function(){
-    if(typeof liff !== "undefined" && liff.isInClient()){
-      liff.scanCodeV2()
-        .then(result => {
-          if(result && result.value){
-            try{
-              const scannedUrl = new URL(result.value);
-              let scannedMember = scannedUrl.searchParams.get("member");
-
-              if(scannedMember){
-                scannedMember = normalizeMember(scannedMember);
-                window.currentMember = scannedMember;
-
-                renderAll();
-
-                completeDetail.innerHTML =
-                  "<span class='complete-title'>✅ 読み取り完了</span><br><br>" +
-                  "会員番号：<b>" + escapeHtml(scannedMember) + "</b><br><br>" +
-                  "<span>クラスを選択してください</span>";
-
-                complete.style.display = "flex";
-
-                setTimeout(() => {
-                  complete.style.display = "none";
-                }, 700);
-              }
-            }catch(e){
-              console.log("scan parse error", e);
-            }
-          }
-        })
-        .catch(err => {
-          console.log("scan error", err);
-        });
-    }else{
-      location.replace(cleanBaseUrl);
-    }
-  };
-
-  /* =====================
-     受講数照会
-  ===================== */
-
-  document.getElementById("remainBtn").onclick = async () => {
-    const currentMember = normalizeMember(window.currentMember);
-
-    if(!currentMember){
-      alert("会員QRを読み取ってください");
-      return;
+      await fetch(url, {
+        method:"POST",
+        mode:"no-cors"
+      });
     }
 
-    try{
-      showLoading();
-      const data = await fetchCount(currentMember);
-      showCount(data);
-    }catch(e){
-      alert("照会エラー");
-      console.log("remainBtn error", e);
-    }
-  };
-
-  /* =====================
-     受付処理（複数対応・1クラスずつ送信）
-     完了表示を先に出す版
-  ===================== */
-
-  async function submit(classNames){
-
-    if(submitting) return;
-    submitting = true;
-
-    const currentMember = normalizeMember(window.currentMember);
-
-    if(!currentMember){
-      alert("会員QRを読み取ってください");
-      submitting = false;
-      return;
-    }
-
-    const classes = Array.isArray(classNames) ? classNames : [classNames];
-
-    // 先に完了UIを表示
+    // 送信完了表示
     completeDetail.innerHTML =
       "<span class='complete-title'>✅ 受付完了</span><br><br>" +
       "会員番号：<b>" + escapeHtml(currentMember) + "</b><br>" +
       "クラス：<b>" + classes.map(c => escapeHtml(c)).join("<br>") + "</b><br><br>" +
       "<span>次の会員を読み取ります…</span>";
 
-    complete.style.display = "flex";
-
-    // 裏で送信開始（待たない）
-    const requests = classes.map(className => {
-      const url =
-        APP_CONFIG.FORM_RESPONSE +
-        "?" + APP_CONFIG.ENTRY_MEMBER + "=" + encodeURIComponent(currentMember) +
-        "&" + APP_CONFIG.ENTRY_CLASS + "=" + encodeURIComponent(className);
-
-      return fetch(url, { method:"POST", mode:"no-cors" })
-        .catch(e => console.log("submit fetch error", e));
-    });
-
-    Promise.all(requests)
-      .catch(e => console.log("submit Promise.all error", e));
-
-    // 体感優先で先に次スキャンへ
-    setTimeout(() => {
-      openScanner();
-      submitting = false;
-    }, 700);
+  }catch(e){
+    console.log("submit error", e);
+    alert("送信エラーが発生しました");
   }
 
-  /* =====================
-     クラス描画
-  ===================== */
-
-  function renderAll(){
-    renderDayButtons({
-      dayButtonsEl: dayButtons,
-      selectedDay,
-      onSelect: (day) => {
-        selectedDay = day;
-        renderAll();
-      }
-    });
-
-    renderClasses({
-      day: selectedDay,
-      titleEl: title,
-      containerEl: container,
-      onSubmit: submit
-    });
-  }
-
-  renderAll();
-
-})();
-</script>
-</body>
-</html>
+  setTimeout(() => {
+    openScanner();
+    submitting = false;
+  }, 1200); // ←少し伸ばす
+}
